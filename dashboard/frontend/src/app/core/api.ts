@@ -13,6 +13,8 @@ export interface Account {
   /** Conexão já inclui a permissão de métricas (conexões da v1 precisam reconectar). */
   hasInsights: boolean;
   syncing: boolean;
+  /** Por qual login a conta está conectada (null = desconectada). */
+  via: 'instagram' | 'facebook' | null;
 }
 
 export interface Profile {
@@ -45,6 +47,10 @@ export interface MediaItem {
 
 export interface ServerConfig {
   missing: string[];
+  /** O que falta para publicar (endereço público); null = pode publicar. */
+  publishMissing: string | null;
+  /** Login do Instagram configurado (IG_APP_ID/SECRET + endereço https). */
+  instagramLogin: boolean;
   redirectUri: string;
   publicBaseUrl: string;
 }
@@ -235,8 +241,63 @@ export interface Draft {
   hook: string | null;
   style: string | null;
   pillar: string | null;
+  /** Fotos/vídeos sugeridos pelo gerador (Pexels); `selected` = vão para o post. */
+  media: StockItem[];
+  /** Nota final do Jev quando o rascunho veio do gerador. */
+  jev_grade: number | null;
   created_at: number;
   updated_at: number;
+}
+
+export interface StockItem {
+  id: string;
+  provider: 'pixabay' | 'pexels';
+  kind: 'photo' | 'video';
+  description: string;
+  thumb: string;
+  download: string;
+  pageUrl: string;
+  credit: string;
+  creditUrl: string;
+  duration?: number;
+  vertical?: boolean;
+  relevance?: number;
+  selected?: boolean;
+}
+
+// ---------- Gerador de posts ----------
+
+export type GenKind = 'image' | 'carousel' | 'reel';
+export type GenStep = 'fila' | 'escrevendo' | 'revisando' | 'reescrevendo' | 'midia' | 'pronto' | 'erro';
+
+export interface GenItem {
+  theme: string;
+  kind: GenKind;
+  step: GenStep;
+  grades: number[];
+  draftId?: number;
+  title?: string;
+  error?: string;
+  notes: string[];
+}
+
+export interface GenJob {
+  id: string;
+  accountId: string;
+  rewrite: boolean;
+  media: boolean;
+  items: GenItem[];
+  done: boolean;
+}
+
+export interface GenStatus {
+  jev: boolean;
+  stock: boolean;
+  /** Nome do banco de imagens configurado (Pixabay ou Pexels). */
+  stockLabel: string | null;
+  maxItems: number;
+  target: number;
+  maxRewrites: number;
 }
 
 export interface ClaudeMessage {
@@ -562,8 +623,8 @@ export class Api {
   facebookStatus() {
     return firstValueFrom(this.http.get<FacebookStatus>('/api/facebook/status'));
   }
-  facebookConnect(accountId: string) {
-    return firstValueFrom(this.http.post<{ url: string }>('/api/facebook/connect', { accountId }));
+  facebookConnect(accountId: string, returnTo: 'conta' | 'descoberta' = 'descoberta') {
+    return firstValueFrom(this.http.post<{ url: string }>('/api/facebook/connect', { accountId, returnTo }));
   }
   facebookDisconnect() {
     return firstValueFrom(this.http.delete<void>('/api/facebook/connection'));
@@ -585,6 +646,28 @@ export class Api {
   }
   updateDiscovered(profileId: number, body: Partial<{ status: DiscoveryStatus; notes: string; watch: boolean }>) {
     return firstValueFrom(this.http.patch<DiscoveredProfile>(`/api/discovery/${profileId}`, body));
+  }
+
+  generateStatus() {
+    return firstValueFrom(this.http.get<GenStatus>('/api/generate/status'));
+  }
+  generate(id: string, body: { items: { theme: string; kind: GenKind }[]; rewrite: boolean; media: boolean }) {
+    return firstValueFrom(this.http.post<GenJob>(`/api/accounts/${id}/generate`, body));
+  }
+  generateJob(jobId: string) {
+    return firstValueFrom(this.http.get<GenJob>(`/api/generate/${jobId}`));
+  }
+  setDraftMedia(did: number, selected: string[]) {
+    return firstValueFrom(this.http.put<StockItem[]>(`/api/drafts/${did}/media`, { selected }));
+  }
+  /**
+   * Arquivo de uma mídia sugerida: cópia local (/media/stock/…) ou, pelo backend, do banco de imagens
+   * (o navegador não baixa direto por CORS).
+   */
+  stockFile(url: string) {
+    return url.startsWith('/media/')
+      ? firstValueFrom(this.http.get(url, { responseType: 'blob' }))
+      : firstValueFrom(this.http.get('/api/stock/file', { params: { url }, responseType: 'blob' }));
   }
 
   jevStatus() {

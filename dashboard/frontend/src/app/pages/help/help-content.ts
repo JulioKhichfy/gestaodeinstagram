@@ -303,6 +303,40 @@ export const HELP: HelpSection[] = [
     ],
   },
   {
+    id: 'gerar',
+    title: 'Gerar posts com Claude + Jev',
+    intro:
+      'Em Rascunhos › "＋ Gerar posts", escreva o tema de 1 a 10 posts (post estático, carrossel ou Reels) e clique em Gerar. Nada é publicado sozinho: cada post vira um rascunho para você revisar e decidir.',
+    items: [
+      {
+        q: 'O que acontece em cada post?',
+        a: [
+          '- O Claude escreve título, legenda e, conforme o formato, os textos dos slides ou o roteiro do Reels.',
+          '- O Jev dá a nota da legenda. Abaixo de 75, as dicas dele viram instrução e o Claude reescreve (até 2 vezes). Fica a versão com a maior nota.',
+          '- Um banco de imagens gratuito (Pixabay) sugere fotos (carrossel e post) ou vídeos (Reels, verticais primeiro), e o Jev ordena pelo quanto combinam com o tema.',
+          'O Jev não escreve texto: ele avalia. Quem reescreve é o Claude, guiado pela avaliação do Jev.',
+        ],
+      },
+      {
+        q: 'Como escolher as fotos e vídeos?',
+        a: [
+          'No rascunho, clique nas miniaturas para marcar o que vai no post (no carrossel, várias). O número no canto é o quanto o Jev acha que a mídia combina com o tema.',
+          'Em "Levar para publicação", as mídias marcadas entram no editor sozinhas. Lá você ainda reordena, troca ou adiciona as suas.',
+          'As fotos e vídeos do Pixabay são gratuitos, inclusive para uso comercial. Dar crédito ao autor é opcional, mas recomendado; o nome está nas anotações do rascunho. As fotos sugeridas ficam guardadas no seu PC (regra do Pixabay) e são cortadas para 4:5 ao entrar no post.',
+        ],
+      },
+      {
+        q: 'Como publicar vídeos (Reels)?',
+        a: [
+          '- Vídeo seu: em Publicar › Reels, envie um MP4 ou MOV vertical (9:16), de 3 segundos a 15 minutos. Peça o roteiro ao Claude antes de gravar.',
+          '- Vídeo de banco: gere um post do tipo Reels; o rascunho traz vídeos do Pixabay (até 90 s, verticais primeiro) e o roteiro. Vídeos horizontais aparecem com faixas no Reels.',
+          'A API não coloca música da biblioteca do Instagram: o som precisa estar no próprio vídeo. Para usar um áudio em alta, publique pelo app do Instagram.',
+          'Publicar exige o túnel aberto (o Instagram baixa o vídeo do seu PC) e pode levar alguns minutos enquanto o Instagram processa.',
+        ],
+      },
+    ],
+  },
+  {
     id: 'jev',
     title: 'Revisão e classificação com o Jev',
     intro:

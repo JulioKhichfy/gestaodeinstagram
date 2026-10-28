@@ -57,28 +57,28 @@ export function validate(req: PublishRequest): string | null {
   return null;
 }
 
-export async function publish(igUserId: string, token: string, req: PublishRequest) {
+export async function publish(igUserId: string, auth: ig.Auth, req: PublishRequest) {
   const caption = req.caption ?? '';
   let containerId: string;
 
   if (req.type === 'image') {
-    ({ id: containerId } = await ig.createContainer(igUserId, token, { image_url: publicUrl(req.items[0]), caption }));
-    await ig.waitUntilReady(containerId, token);
+    ({ id: containerId } = await ig.createContainer(igUserId, auth, { image_url: publicUrl(req.items[0]), caption }));
+    await ig.waitUntilReady(containerId, auth);
   } else if (req.type === 'carousel') {
     const children: string[] = [];
     for (const file of req.items) {
       const params: Record<string, string> = isVideo(file)
         ? { media_type: 'VIDEO', video_url: publicUrl(file), is_carousel_item: 'true' }
         : { image_url: publicUrl(file), is_carousel_item: 'true' };
-      children.push((await ig.createContainer(igUserId, token, params)).id);
+      children.push((await ig.createContainer(igUserId, auth, params)).id);
     }
-    for (const child of children) await ig.waitUntilReady(child, token);
-    ({ id: containerId } = await ig.createContainer(igUserId, token, {
+    for (const child of children) await ig.waitUntilReady(child, auth);
+    ({ id: containerId } = await ig.createContainer(igUserId, auth, {
       media_type: 'CAROUSEL',
       children: children.join(','),
       caption,
     }));
-    await ig.waitUntilReady(containerId, token);
+    await ig.waitUntilReady(containerId, auth);
   } else {
     const params: Record<string, string> = {
       media_type: 'REELS',
@@ -90,11 +90,11 @@ export async function publish(igUserId: string, token: string, req: PublishReque
     // MANUAL: você decide no app se o Trial Reels vai para os seguidores.
     if (req.trial) params.trial_params = JSON.stringify({ graduation_strategy: 'MANUAL' });
     if (req.coverItem) params.cover_url = publicUrl(req.coverItem);
-    ({ id: containerId } = await ig.createContainer(igUserId, token, params));
-    await ig.waitUntilReady(containerId, token);
+    ({ id: containerId } = await ig.createContainer(igUserId, auth, params));
+    await ig.waitUntilReady(containerId, auth);
   }
 
-  const result = await ig.publishContainer(igUserId, token, containerId);
+  const result = await ig.publishContainer(igUserId, auth, containerId);
 
   // O Instagram já copiou a mídia; não precisamos mais dos arquivos locais.
   for (const file of [...req.items, req.coverItem].filter(Boolean) as string[]) {

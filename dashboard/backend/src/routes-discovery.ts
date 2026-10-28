@@ -1,4 +1,4 @@
-// Descoberta de perfis e o login do Facebook que ela exige.
+// Login do Facebook (Descoberta e conexão das contas vinculadas a Páginas) e rotas da Descoberta.
 // `facebookCallback` é público (volta do OAuth, protegido pelo state); `discovery` exige sessão (aplicada em server.ts).
 import crypto from 'node:crypto';
 import express, { type NextFunction, type Request, type Response } from 'express';
@@ -17,12 +17,15 @@ import {
 } from './discovery.ts';
 import * as fb from './facebook.ts';
 import { InstagramError } from './instagram.ts';
+import { syncAccount } from './sync.ts';
 import { encrypt, facebookToken, read, write } from './store.ts';
 
 /** Permissões sem as quais a Descoberta não funciona (business_management é opcional). */
 const REQUIRED = ['instagram_basic', 'instagram_manage_insights', 'pages_show_list', 'pages_read_engagement'];
 
-const oauthStates = new Map<string, { accountId: string; expiresAt: number }>();
+/** Para onde voltar depois do login: a página da conta (conectar) ou a Descoberta. */
+type ReturnTo = 'conta' | 'descoberta';
+const oauthStates = new Map<string, { accountId: string; returnTo: ReturnTo; expiresAt: number }>();
 
 const handle =
   (fn: (req: Request, res: Response) => Promise<void> | void) => (req: Request, res: Response, next: NextFunction) => {
@@ -59,8 +62,10 @@ facebookCallback.get('/facebook/callback', async (req, res) => {
   const { code, state, error_description } = req.query as Record<string, string | undefined>;
   const pending = state ? oauthStates.get(state) : undefined;
   if (state) oauthStates.delete(state);
-  const back = (accountId: string | undefined, params: Record<string, string>) =>
-    res.redirect(`${config.frontendUrl}/${accountId ? `conta/${accountId}/descoberta` : ''}?${new URLSearchParams(params)}`);
+  const back = (accountId: string | undefined, params: Record<string, string>) => {
+    const page = !accountId ? '' : pending?.returnTo === 'conta' ? `conta/${accountId}` : `conta/${accountId}/descoberta`;
+    res.redirect(`${config.frontendUrl}/${page}?${new URLSearchParams(params)}`);
+  };
 
   if (!pending || pending.expiresAt < Date.now()) {
     return back(undefined, { error: 'Pedido de conexão expirado. Tente conectar de novo.' });
@@ -69,23 +74,52 @@ facebookCallback.get('/facebook/callback', async (req, res) => {
 
   try {
     const { token, expiresIn } = await fb.fbExchangeCode(code);
-    const [me, igAccounts] = await Promise.all([fb.fbMe(token), fb.fbLinkedInstagram(token)]);
+    const [me, { accounts: igAccounts, pagesWithoutInstagram }] = await Promise.all([fb.fbMe(token), fb.fbLinkedInstagram(token)]);
     const linked: Record<string, string> = {};
     for (const a of ACCOUNTS) {
       const found = igAccounts.find((i) => i.username.toLowerCase() === a.username.toLowerCase());
       if (found) linked[a.id] = found.igUserId;
     }
+    const now = Date.now();
+    const tokenEnc = encrypt(token);
+    const connected: string[] = [];
     write((d) => {
       d.facebook = {
         name: me.name,
-        tokenEnc: encrypt(token),
-        tokenIssuedAt: Date.now(),
-        tokenExpiresAt: Date.now() + expiresIn * 1000,
+        tokenEnc,
+        tokenIssuedAt: now,
+        tokenExpiresAt: now + expiresIn * 1000,
         permissions: me.permissions,
         linked,
       };
+      // Contas vinculadas a uma Página passam a sincronizar/publicar por este login, exceto as que já têm
+      // conexão válida pelo login do Instagram (essa renova sozinha).
+      for (const [accountId, igUserId] of Object.entries(linked)) {
+        const c = d.connections[accountId];
+        if (c && !c.via && c.tokenExpiresAt > now) continue;
+        d.connections[accountId] = {
+          igUserId,
+          username: igAccounts.find((i) => i.igUserId === igUserId)!.username,
+          tokenEnc,
+          tokenIssuedAt: now,
+          tokenExpiresAt: now + expiresIn * 1000,
+          permissions: me.permissions,
+          via: 'facebook',
+        };
+        connected.push(accountId);
+      }
     });
-    back(pending.accountId, { fb: '1' });
+    for (const id of connected) syncAccount(id).catch((e) => console.error('sync:', e));
+    if (pending.returnTo === 'conta' && !linked[pending.accountId]) {
+      const found = igAccounts.map((i) => '@' + i.username).join(', ') || 'nenhuma';
+      const pages = pagesWithoutInstagram.length ? ` Páginas sem Instagram vinculado: ${pagesWithoutInstagram.join(', ')}.` : '';
+      return back(pending.accountId, {
+        error:
+          `Login feito, mas esta conta não apareceu vinculada a uma Página sua. Contas do Instagram encontradas: ${found}.${pages}` +
+          ' Vincule a conta profissional à Página (Instagram › Editar perfil › Página) e conecte de novo.',
+      });
+    }
+    back(pending.accountId, pending.returnTo === 'conta' ? { connected: '1' } : { fb: '1' });
   } catch (e) {
     back(pending.accountId, { fbError: (e as Error).message });
   }
@@ -114,8 +148,9 @@ discovery.post(
     const missing = missingFacebookConfig();
     if (missing.length) throw new DiscoveryError(400, `Configure no backend/.env: ${missing.join(', ')}`);
     const target = findAccount(String(req.body?.accountId ?? ''))?.id ?? ACCOUNTS[0].id;
+    const returnTo: ReturnTo = req.body?.returnTo === 'conta' ? 'conta' : 'descoberta';
     const state = crypto.randomBytes(24).toString('base64url');
-    oauthStates.set(state, { accountId: target, expiresAt: Date.now() + 10 * 60 * 1000 });
+    oauthStates.set(state, { accountId: target, returnTo, expiresAt: Date.now() + 10 * 60 * 1000 });
     res.json({ url: fb.fbAuthorizeUrl(state) });
   }),
 );
@@ -123,6 +158,7 @@ discovery.post(
 discovery.delete('/facebook/connection', (_req, res) => {
   write((d) => {
     delete d.facebook;
+    for (const [id, c] of Object.entries(d.connections)) if (c.via === 'facebook') delete d.connections[id];
   });
   res.status(204).end();
 });

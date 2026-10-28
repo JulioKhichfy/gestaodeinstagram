@@ -12,5 +12,6 @@ process.env.ACCOUNTS_FILE = path.join(import.meta.dirname, 'fixtures', 'accounts
 // Nunca chamar o Jev de verdade nos testes, mesmo que a chave exista no ambiente do PC.
 delete process.env.TYPESAFE_API_KEY;
 delete process.env.JEV_BASE_URL;
+delete process.env.PEXELS_API_KEY;
 
 export const TMP = tmp;

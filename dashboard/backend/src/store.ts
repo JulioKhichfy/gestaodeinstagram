@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { config } from './config.ts';
+import type { Auth } from './instagram.ts';
 
 /** Conexão de uma conta. O token fica criptografado em disco. */
 export interface Connection {
@@ -12,6 +13,8 @@ export interface Connection {
   tokenExpiresAt: number;
   /** Permissões concedidas no OAuth (conexões da v1 não têm este campo). */
   permissions?: string[];
+  /** 'facebook' = conectada pelo login do Facebook (Página vinculada); ausente = login do Instagram. */
+  via?: 'facebook';
 }
 
 /**
@@ -82,6 +85,12 @@ export function decrypt(payload: string): string {
 export function connectionToken(accountId: string): string | undefined {
   const c = data.connections[accountId];
   return c ? decrypt(c.tokenEnc) : undefined;
+}
+
+/** Token + servidor certo para chamar a API em nome da conta. */
+export function connectionAuth(accountId: string): Auth | undefined {
+  const c = data.connections[accountId];
+  return c ? { token: decrypt(c.tokenEnc), via: c.via ?? 'instagram' } : undefined;
 }
 
 export function facebookToken(): string | undefined {

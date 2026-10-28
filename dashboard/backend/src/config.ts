@@ -66,6 +66,8 @@ export const config = {
   /** App da Meta (Configurações > Básico): usado só pela Descoberta, via login do Facebook. */
   fbAppId: env.FB_APP_ID ?? '',
   fbAppSecret: env.FB_APP_SECRET ?? '',
+  /** Login do Facebook para Empresas: id da configuração (com as permissões) criada no painel da Meta. */
+  fbConfigId: env.FB_CONFIG_ID ?? '',
   /** Base do retorno do login do Facebook. Em modo Desenvolvimento a Meta aceita localhost. */
   fbRedirectBase: (env.FB_REDIRECT_BASE ?? '').replace(/\/+$/, ''),
   /** Executável do Claude Code (usa a assinatura logada no PC). */
@@ -76,6 +78,9 @@ export const config = {
   typesafeApiKey: env.TYPESAFE_API_KEY ?? '',
   jevModel: env.JEV_MODEL || 'jev-latest',
   jevBaseUrl: (env.JEV_BASE_URL || 'https://api.typesafe.ai').replace(/\/+$/, ''),
+  /** Banco de imagens para os posts gerados: Pixabay (preferido) ou Pexels. Sem chave, as sugestões de mídia ficam desligadas. */
+  pixabayApiKey: env.PIXABAY_API_KEY ?? '',
+  pexelsApiKey: env.PEXELS_API_KEY ?? '',
   // DATA_DIR/MEDIA_DIR permitem que os testes usem pastas temporárias.
   dataDir: env.DATA_DIR ?? path.resolve(import.meta.dirname, '..', 'data'),
   mediaDir: env.MEDIA_DIR ?? path.resolve(import.meta.dirname, '..', 'media'),
@@ -94,6 +99,19 @@ export function missingConfig(): string[] {
   if (!config.publicBaseUrl.startsWith('https://')) missing.push('PUBLIC_BASE_URL (https)');
   return missing;
 }
+
+/**
+ * O que falta para usar o dashboard: ao menos um login configurado (Instagram ou Facebook).
+ * PUBLIC_BASE_URL fica à parte: sem ele só a publicação desliga.
+ */
+export function setupMissing(): string[] {
+  const instagram = Boolean(config.igAppId && config.igAppSecret);
+  const facebook = Boolean(config.fbAppId && config.fbAppSecret);
+  return instagram || facebook ? [] : ['IG_APP_ID e IG_APP_SECRET, ou FB_APP_ID e FB_APP_SECRET'];
+}
+
+export const publishMissing = () =>
+  config.publicBaseUrl.startsWith('https://') ? null : 'PUBLIC_BASE_URL (endereço https público: túnel ou servidor)';
 
 /** O que falta no .env para a Descoberta (login do Facebook). */
 export function missingFacebookConfig(): string[] {

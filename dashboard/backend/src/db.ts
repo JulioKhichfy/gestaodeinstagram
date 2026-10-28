@@ -207,6 +207,11 @@ const MIGRATIONS: string[] = [
     created_at INTEGER NOT NULL
   );
   `,
+  // Gerador de posts: mídia sugerida (Pexels) e nota final do Jev no rascunho.
+  `
+  ALTER TABLE drafts ADD COLUMN media TEXT NOT NULL DEFAULT '[]';  -- [StockItem] com selected
+  ALTER TABLE drafts ADD COLUMN jev_grade INTEGER;
+  `,
 ];
 
 export function openDb(file: string): DatabaseSync {

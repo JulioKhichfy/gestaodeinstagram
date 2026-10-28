@@ -106,12 +106,29 @@ export function buildUserPrompt(input: AskInput): string {
 }
 
 export async function askClaude(db: DatabaseSync, input: AskInput, timeoutMs = 3 * 60 * 1000): Promise<string> {
-  if (active >= MAX_CONCURRENT) throw new ClaudeError('O Claude já está trabalhando em outros pedidos. Aguarde alguns segundos.');
+  return completeClaude(buildSystemPrompt(db, input), buildUserPrompt(input), { timeoutMs });
+}
+
+const sleep = (ms: number) => new Promise((ok) => setTimeout(ok, ms));
+
+/**
+ * Uma chamada ao Claude Code: system prompt + pedido, devolve o texto. `wait` espera vaga em vez de recusar
+ * (usado pelo gerador de posts, que roda em segundo plano).
+ */
+export async function completeClaude(
+  systemPrompt: string,
+  userPrompt: string,
+  { timeoutMs = 3 * 60 * 1000, wait = false }: { timeoutMs?: number; wait?: boolean } = {},
+): Promise<string> {
+  while (active >= MAX_CONCURRENT) {
+    if (!wait) throw new ClaudeError('O Claude já está trabalhando em outros pedidos. Aguarde alguns segundos.');
+    await sleep(1000);
+  }
   active++;
   const workDir = path.join(os.tmpdir(), 'ig-dashboard-claude');
   fs.mkdirSync(workDir, { recursive: true });
   const promptFile = path.join(workDir, `system-${crypto.randomUUID()}.txt`);
-  fs.writeFileSync(promptFile, buildSystemPrompt(db, input));
+  fs.writeFileSync(promptFile, systemPrompt);
   try {
     const args = [
       '-p',
@@ -122,7 +139,7 @@ export async function askClaude(db: DatabaseSync, input: AskInput, timeoutMs = 3
       '--system-prompt-file', `"${promptFile}"`,
     ];
     if (config.claudeModel) args.push('--model', config.claudeModel);
-    const out = await run(config.claudeBin, args, buildUserPrompt(input), workDir, timeoutMs);
+    const out = await run(config.claudeBin, args, userPrompt, workDir, timeoutMs);
     let parsed: { result?: string; is_error?: boolean };
     try {
       parsed = JSON.parse(out);

@@ -8,6 +8,7 @@ import {
   HASHTAG_SOFT,
   LocalMedia,
   countHashtags,
+  cropToFeed,
   isVideoFile,
   loadImage,
   loadVideo,
@@ -41,6 +42,7 @@ const ACCEPT: Record<PostType, string> = {
         }
       </div>
       <p class="muted small">{{ hint() }}</p>
+      @if (loadingMedia()) { <p class="alert info"><span class="spinner"></span> Baixando as fotos/vídeos escolhidos no rascunho…</p> }
 
       <!-- Mídias -->
       <div class="media-grid">
@@ -202,6 +204,7 @@ export class Composer {
         : ['legenda', 'card', 'ganchos', 'hashtags', 'melhorar', 'livre'],
   );
   protected showTextCard = signal(false);
+  protected loadingMedia = signal(false);
   protected status = signal<Status>('idle');
   protected message = signal('');
   protected permalink = signal<string | undefined>(undefined);
@@ -256,8 +259,27 @@ export class Composer {
       untracked(() => {
         this.setType(d.kind === 'carousel' ? 'carousel' : d.kind === 'reel' ? 'reel' : 'image');
         this.caption.set(d.body);
+        this.loadDraftMedia(d);
       });
     });
+  }
+
+  /** Mídia escolhida no rascunho (banco de imagens): entra como se fosse um arquivo enviado; fotos cortadas para o feed. */
+  private async loadDraftMedia(d: Draft): Promise<void> {
+    const chosen = (d.media ?? []).filter((m) => m.selected);
+    if (!chosen.length) return;
+    this.loadingMedia.set(true);
+    try {
+      for (const m of chosen) {
+        const blob = await this.api.stockFile(m.download);
+        const file = new File([blob], `${m.id}.${m.kind === 'video' ? 'mp4' : 'jpg'}`, { type: blob.type });
+        await this.addFiles([m.kind === 'photo' ? await cropToFeed(file) : file]);
+      }
+    } catch (e) {
+      this.fail(`Não consegui baixar a mídia do rascunho: ${errorMessage(e)}`);
+    } finally {
+      this.loadingMedia.set(false);
+    }
   }
 
   useClaude({ text, mode }: { text: string; mode: 'replace' | 'append' }): void {

@@ -3,7 +3,16 @@
 // Nomes de métricas conferidos na doc da Meta em out/2026.
 import { config, redirectUri } from './config.ts';
 
-const graph = (p: string) => `https://graph.instagram.com/${config.graphVersion}/${p}`;
+/**
+ * Credencial de uma chamada. O login do Instagram usa graph.instagram.com; o login do Facebook
+ * (conta vinculada a uma Página) usa graph.facebook.com. Os endpoints de mídia, métricas e publicação são iguais.
+ */
+export interface Auth {
+  token: string;
+  via: 'instagram' | 'facebook';
+}
+
+const graph = (auth: Auth, p: string) => `https://graph.${auth.via}.com/${config.graphVersion}/${p}`;
 
 export class InstagramError extends Error {
   constructor(
@@ -109,9 +118,16 @@ export interface Profile {
   media_count?: number;
 }
 
-export function getProfile(token: string): Promise<Profile> {
-  const fields = 'user_id,username,name,profile_picture_url,account_type,followers_count,follows_count,media_count';
-  return call<Profile>(withToken(`${graph('me')}?fields=${fields}`, token));
+/** Perfil da conta. No login do Facebook, "me" é a pessoa: o perfil vem pelo id da conta do Instagram. */
+export async function getProfile(auth: Auth, igUserId?: string): Promise<Profile> {
+  if (auth.via === 'instagram') {
+    const fields = 'user_id,username,name,profile_picture_url,account_type,followers_count,follows_count,media_count';
+    return call<Profile>(withToken(`${graph(auth, 'me')}?fields=${fields}`, auth.token));
+  }
+  if (!igUserId) throw new InstagramError('Conta do Instagram não identificada.');
+  const fields = 'id,username,name,profile_picture_url,followers_count,follows_count,media_count';
+  const { id, ...rest } = await call<Omit<Profile, 'user_id'> & { id: string }>(withToken(`${graph(auth, igUserId)}?${new URLSearchParams({ fields })}`, auth.token));
+  return { user_id: id, ...rest };
 }
 
 export interface MediaItem {
@@ -130,17 +146,17 @@ export interface MediaItem {
 const MEDIA_FIELDS =
   'id,caption,media_type,media_product_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count';
 
-export async function getRecentMedia(igUserId: string, token: string, limit = 12): Promise<MediaItem[]> {
+export async function getRecentMedia(igUserId: string, auth: Auth, limit = 12): Promise<MediaItem[]> {
   const r = await call<{ data: MediaItem[] }>(
-    withToken(`${graph(`${igUserId}/media`)}?fields=${MEDIA_FIELDS}&limit=${limit}`, token),
+    withToken(`${graph(auth, `${igUserId}/media`)}?fields=${MEDIA_FIELDS}&limit=${limit}`, auth.token),
   );
   return r.data;
 }
 
 /** Mídias publicadas a partir de `sinceMs`, paginando (mais recentes primeiro). */
-export async function getMediaSince(igUserId: string, token: string, sinceMs: number, max = 500): Promise<MediaItem[]> {
+export async function getMediaSince(igUserId: string, auth: Auth, sinceMs: number, max = 500): Promise<MediaItem[]> {
   const out: MediaItem[] = [];
-  let url: string | undefined = withToken(`${graph(`${igUserId}/media`)}?fields=${MEDIA_FIELDS}&limit=50`, token);
+  let url: string | undefined = withToken(`${graph(auth, `${igUserId}/media`)}?fields=${MEDIA_FIELDS}&limit=50`, auth.token);
   while (url && out.length < max) {
     const page: { data: MediaItem[]; paging?: { next?: string } } = await call(url);
     for (const m of page.data) {
@@ -152,9 +168,9 @@ export async function getMediaSince(igUserId: string, token: string, sinceMs: nu
   return out;
 }
 
-export async function getPublishingLimit(igUserId: string, token: string): Promise<{ used: number; total: number }> {
+export async function getPublishingLimit(igUserId: string, auth: Auth): Promise<{ used: number; total: number }> {
   const r = await call<{ data: { quota_usage: number; config?: { quota_total: number } }[] }>(
-    withToken(`${graph(`${igUserId}/content_publishing_limit`)}?fields=quota_usage,config`, token),
+    withToken(`${graph(auth, `${igUserId}/content_publishing_limit`)}?fields=quota_usage,config`, auth.token),
   );
   const d = r.data[0];
   return { used: d?.quota_usage ?? 0, total: d?.config?.quota_total ?? 0 };
@@ -188,19 +204,19 @@ const REELS_METRICS = ['reach', 'views', 'likes', 'comments', 'saved', 'shares',
 const SAFE_METRICS = ['reach', 'likes', 'comments', 'saved', 'shares'];
 
 /** Métricas lifetime de uma mídia. Se a Meta recusar algum nome, tenta o conjunto mínimo. */
-export async function getMediaInsights(mediaId: string, productType: string | undefined, token: string): Promise<MediaInsights> {
+export async function getMediaInsights(mediaId: string, productType: string | undefined, auth: Auth): Promise<MediaInsights> {
   const preferred = productType === 'REELS' ? REELS_METRICS : FEED_METRICS;
   try {
-    return await mediaInsights(mediaId, preferred, token);
+    return await mediaInsights(mediaId, preferred, auth);
   } catch (e) {
     if (e instanceof InstagramError && e.code === 190) throw e; // token inválido: não adianta repetir
-    return mediaInsights(mediaId, SAFE_METRICS, token);
+    return mediaInsights(mediaId, SAFE_METRICS, auth);
   }
 }
 
-async function mediaInsights(mediaId: string, metrics: string[], token: string): Promise<MediaInsights> {
+async function mediaInsights(mediaId: string, metrics: string[], auth: Auth): Promise<MediaInsights> {
   const r = await call<{ data: InsightValue[] }>(
-    withToken(`${graph(`${mediaId}/insights`)}?metric=${metrics.join(',')}`, token),
+    withToken(`${graph(auth, `${mediaId}/insights`)}?metric=${metrics.join(',')}`, auth.token),
   );
   return Object.fromEntries(r.data.map((i) => [i.name, insightNumber(i)]));
 }
@@ -219,7 +235,7 @@ export const ACCOUNT_DAY_METRICS = [
 export type AccountDay = Partial<Record<(typeof ACCOUNT_DAY_METRICS)[number], number>>;
 
 /** Totais da conta num intervalo (since/until em segundos Unix). */
-export async function getAccountTotals(igUserId: string, token: string, since: number, until: number): Promise<AccountDay> {
+export async function getAccountTotals(igUserId: string, auth: Auth, since: number, until: number): Promise<AccountDay> {
   const q = new URLSearchParams({
     metric: ACCOUNT_DAY_METRICS.join(','),
     period: 'day',
@@ -227,7 +243,7 @@ export async function getAccountTotals(igUserId: string, token: string, since: n
     since: String(since),
     until: String(until),
   });
-  const r = await call<{ data: InsightValue[] }>(withToken(`${graph(`${igUserId}/insights`)}?${q}`, token));
+  const r = await call<{ data: InsightValue[] }>(withToken(`${graph(auth, `${igUserId}/insights`)}?${q}`, auth.token));
   return Object.fromEntries(r.data.map((i) => [i.name, insightNumber(i)]));
 }
 
@@ -237,7 +253,7 @@ export type Demographics = Record<string, Record<string, number>>;
 /** Demografia. A Meta só retorna com 100+ seguidores/engajamentos. */
 export async function getDemographics(
   igUserId: string,
-  token: string,
+  auth: Auth,
   metric: 'follower_demographics' | 'engaged_audience_demographics',
 ): Promise<Demographics> {
   const out: Demographics = {};
@@ -251,7 +267,7 @@ export async function getDemographics(
     });
     type Results = { results?: { dimension_values: string[]; value: number }[] };
     const r = await call<{ data: { total_value?: { breakdowns?: Results[] } }[] }>(
-      withToken(`${graph(`${igUserId}/insights`)}?${q}`, token),
+      withToken(`${graph(auth, `${igUserId}/insights`)}?${q}`, auth.token),
     );
     const results = r.data[0]?.total_value?.breakdowns?.[0]?.results ?? [];
     out[breakdown] = Object.fromEntries(results.map((x) => [x.dimension_values.join(' '), x.value]));
@@ -260,10 +276,10 @@ export async function getDemographics(
 }
 
 /** Média de seguidores online por hora (índice 0-23, fuso da Meta) nos dias disponíveis. */
-export async function getOnlineFollowers(igUserId: string, token: string): Promise<number[]> {
+export async function getOnlineFollowers(igUserId: string, auth: Auth): Promise<number[]> {
   const q = new URLSearchParams({ metric: 'online_followers', period: 'lifetime' });
   const r = await call<{ data: { values: { value: Record<string, number> }[] }[] }>(
-    withToken(`${graph(`${igUserId}/insights`)}?${q}`, token),
+    withToken(`${graph(auth, `${igUserId}/insights`)}?${q}`, auth.token),
   );
   const days = (r.data[0]?.values ?? []).map((v) => v.value).filter((v) => v && Object.keys(v).length);
   const hours = Array.from({ length: 24 }, () => 0);
@@ -274,15 +290,15 @@ export async function getOnlineFollowers(igUserId: string, token: string): Promi
 
 // ---------- Publicação ----------
 
-export function createContainer(igUserId: string, token: string, params: Record<string, string>): Promise<{ id: string }> {
-  return call<{ id: string }>(graph(`${igUserId}/media`), form({ ...params, access_token: token }));
+export function createContainer(igUserId: string, auth: Auth, params: Record<string, string>): Promise<{ id: string }> {
+  return call<{ id: string }>(graph(auth, `${igUserId}/media`), form({ ...params, access_token: auth.token }));
 }
 
-export async function waitUntilReady(containerId: string, token: string, timeoutMs = 10 * 60 * 1000): Promise<void> {
+export async function waitUntilReady(containerId: string, auth: Auth, timeoutMs = 10 * 60 * 1000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     const r = await call<{ status_code: string; status?: string }>(
-      withToken(`${graph(containerId)}?fields=status_code,status`, token),
+      withToken(`${graph(auth, containerId)}?fields=status_code,status`, auth.token),
     );
     if (r.status_code === 'FINISHED' || r.status_code === 'PUBLISHED') return;
     if (r.status_code === 'ERROR' || r.status_code === 'EXPIRED') {
@@ -293,12 +309,12 @@ export async function waitUntilReady(containerId: string, token: string, timeout
   throw new InstagramError('Tempo esgotado esperando o Instagram processar a mídia.');
 }
 
-export async function publishContainer(igUserId: string, token: string, creationId: string): Promise<{ id: string; permalink?: string }> {
+export async function publishContainer(igUserId: string, auth: Auth, creationId: string): Promise<{ id: string; permalink?: string }> {
   const { id } = await call<{ id: string }>(
-    graph(`${igUserId}/media_publish`),
-    form({ creation_id: creationId, access_token: token }),
+    graph(auth, `${igUserId}/media_publish`),
+    form({ creation_id: creationId, access_token: auth.token }),
   );
-  const media = await call<{ permalink?: string }>(withToken(`${graph(id)}?fields=permalink`, token)).catch(() => ({
+  const media = await call<{ permalink?: string }>(withToken(`${graph(auth, id)}?fields=permalink`, auth.token)).catch(() => ({
     permalink: undefined,
   }));
   return { id, permalink: media.permalink };

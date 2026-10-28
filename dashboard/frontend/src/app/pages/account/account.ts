@@ -40,6 +40,7 @@ export class AccountPage {
   protected loading = signal(false);
   protected banner = signal<{ kind: 'ok' | 'error' | 'info'; text: string } | null>(null);
   protected connecting = signal(false);
+  protected instagramLogin = signal(false);
   protected dateTime = dateTimeBR;
 
   protected tokenDaysLeft = computed(() => {
@@ -51,6 +52,10 @@ export class AccountPage {
   private loadSeq = 0;
 
   constructor() {
+    this.api
+      .config()
+      .then((c) => this.instagramLogin.set(c.instagramLogin))
+      .catch(() => undefined);
     // Volta do OAuth: mostra o resultado e limpa a URL.
     effect(() => {
       const ok = this.connected();
@@ -58,7 +63,7 @@ export class AccountPage {
       if (!ok && !err) return;
       untracked(() => {
         this.banner.set(
-          err ? { kind: 'error', text: err } : { kind: 'ok', text: 'Instagram conectado! Sincronizando métricas em segundo plano…' },
+          err ? { kind: 'error', text: err } : { kind: 'ok', text: 'Conta conectada! Sincronizando métricas em segundo plano…' },
         );
         this.router.navigate([], { queryParams: {}, replaceUrl: true });
         if (ok) this.store.reload().then(() => this.store.watchSync());
@@ -87,11 +92,11 @@ export class AccountPage {
     }
   }
 
-  async connect(): Promise<void> {
+  async connect(via: 'instagram' | 'facebook' = 'instagram'): Promise<void> {
     this.connecting.set(true);
     this.banner.set(null);
     try {
-      const { url } = await this.api.connect(this.id());
+      const { url } = via === 'facebook' ? await this.api.facebookConnect(this.id(), 'conta') : await this.api.connect(this.id());
       window.location.href = url;
     } catch (e) {
       this.banner.set({ kind: 'error', text: errorMessage(e) });

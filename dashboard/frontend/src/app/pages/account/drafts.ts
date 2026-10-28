@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
-import { Api, Artifact, Draft, DraftKind, DraftStatus, errorMessage } from '../../core/api';
+import { Api, Artifact, Draft, DraftKind, DraftStatus, StockItem, errorMessage } from '../../core/api';
 import { dateTimeBR } from '../../core/format';
 import { ClaudePanel } from '../../shared/claude-panel';
 import { JevReview } from '../../shared/jev-review';
+import { PostGenerator } from './post-generator';
 
 const KIND_LABELS: Record<DraftKind, string> = { image: 'Post estático', carousel: 'Carrossel', reel: 'Reels', story: 'Story' };
 const STATUS: { value: DraftStatus; label: string }[] = [
@@ -23,11 +24,14 @@ const ARTIFACTS_BY_KIND: Record<DraftKind, Artifact[]> = {
 @Component({
   selector: 'app-drafts',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ClaudePanel, JevReview],
+  imports: [ClaudePanel, JevReview, PostGenerator],
   template: `
     <div class="layout">
       <section class="card list">
-        <h2>Rascunhos</h2>
+        <div class="list-head">
+          <h2>Rascunhos</h2>
+          <button type="button" class="btn primary" (click)="openGenerator()" title="Gerar de 1 a 10 posts com Claude + Jev">＋ Gerar posts</button>
+        </div>
         <p class="muted small">Cada artefato (roteiro, legenda, textos do carrossel, ideia de som) fica guardado aqui até virar post.</p>
         <form class="new" (submit)="create($event)">
           <input type="text" placeholder="Novo rascunho: título ou ideia" [value]="newTitle()"
@@ -49,7 +53,7 @@ const ARTIFACTS_BY_KIND: Record<DraftKind, Artifact[]> = {
           @for (d of byStatus()[s.value]; track d.id) {
             <button type="button" class="draft-item" [class.active]="selected()?.id === d.id" (click)="select(d)">
               <span>{{ d.title }}</span>
-              <small class="muted">{{ kindLabels[d.kind] }} · {{ when(d.updated_at) }}</small>
+              <small class="muted">{{ kindLabels[d.kind] }} · {{ when(d.updated_at) }}@if (d.jev_grade !== null) { · Jev {{ d.jev_grade }} }@if (d.media.length) { · {{ selectedMedia(d).length }} mídia(s) }</small>
             </button>
           } @empty {
             <p class="muted small">—</p>
@@ -58,7 +62,9 @@ const ARTIFACTS_BY_KIND: Record<DraftKind, Artifact[]> = {
       </section>
 
       <section class="card editor">
-        @if (selected(); as d) {
+        @if (generator()) {
+          <app-post-generator [accountId]="id()" (finished)="load(id())" (open)="openGenerated($event)" (closed)="generator.set(false)" />
+        } @else if (selected(); as d) {
           <div class="row">
             <input class="title" type="text" [value]="d.title" (change)="patch({ title: $any($event.target).value })" />
             <button type="button" class="btn ghost danger" (click)="remove(d)">Excluir</button>
@@ -88,6 +94,31 @@ const ARTIFACTS_BY_KIND: Record<DraftKind, Artifact[]> = {
             <span>Texto do artefato (roteiro, legenda, textos dos slides…)</span>
             <textarea rows="12" [value]="body()" (input)="body.set($any($event.target).value)" (blur)="saveBody()"></textarea>
           </label>
+          @if (d.media.length) {
+            <div class="media-pick">
+              <h4>Fotos e vídeos sugeridos
+                <small class="muted">{{ d.kind === 'carousel' ? 'clique para marcar quais vão no carrossel' : 'clique para escolher' }}
+                  · {{ selectedMedia(d).length }} escolhida(s)</small>
+              </h4>
+              <div class="thumbs">
+                @for (m of d.media; track m.id) {
+                  <button type="button" class="thumb" [class.on]="m.selected" (click)="toggleMedia(d, m)"
+                          [title]="m.description + ' — ' + m.credit" [attr.aria-pressed]="!!m.selected">
+                    <img [src]="m.thumb" [alt]="m.description" loading="lazy" />
+                    @if (m.kind === 'video') { <span class="tag">▶ {{ m.duration }}s{{ m.vertical ? '' : ' · horizontal' }}</span> }
+                    @if (m.relevance !== undefined) { <span class="tag right" title="Quanto o Jev acha que combina com o tema">{{ pct(m.relevance) }}</span> }
+                  </button>
+                }
+              </div>
+              <small class="muted">Fotos e vídeos gratuitos do
+                @if (d.media[0].provider === 'pixabay') { <a href="https://pixabay.com" target="_blank" rel="noopener">Pixabay</a> }
+                @else { <a href="https://www.pexels.com" target="_blank" rel="noopener">Pexels</a> }.
+                Escolhidos: @for (m of selectedMedia(d); track m.id) {
+                  <a [href]="m.pageUrl" target="_blank" rel="noopener">{{ m.credit }}</a>@if (!$last) {, }
+                } @empty { nenhum }.
+                Ao levar para publicação, eles entram no post automaticamente.</small>
+            </div>
+          }
           <label class="field">
             <span>Anotações (referências, mídias a gravar, música, ideias)</span>
             <textarea rows="3" [value]="d.notes" (change)="patch({ notes: $any($event.target).value })"></textarea>
@@ -131,6 +162,17 @@ const ARTIFACTS_BY_KIND: Record<DraftKind, Artifact[]> = {
     .row.end { justify-content: flex-end; align-items: center; }
     .title { font-size: 1.1rem; font-weight: 600; flex: 1; }
     .empty { padding: 24px 8px; }
+    .list-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .media-pick { display: grid; gap: 6px;
+      h4 { margin: 0; font-size: .92rem; } }
+    .thumbs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+    .thumb { position: relative; flex: none; width: 96px; height: 120px; padding: 0; border: 2px solid transparent;
+      border-radius: 8px; overflow: hidden; cursor: pointer; background: var(--surface-2); opacity: .55;
+      img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      &.on { border-color: var(--accent); opacity: 1; } }
+    .tag { position: absolute; left: 4px; bottom: 4px; font-size: .7rem; background: rgb(0 0 0 / .65); color: #fff;
+      border-radius: 4px; padding: 1px 4px;
+      &.right { left: auto; right: 4px; } }
     @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
   `,
 })
@@ -152,6 +194,7 @@ export class DraftsPage {
   protected newTitle = signal('');
   protected newKind = signal<DraftKind>('reel');
   protected ideas = signal(false);
+  protected generator = signal(false);
   protected error = signal('');
   protected saved = signal('');
 
@@ -174,7 +217,43 @@ export class DraftsPage {
     });
   }
 
-  private async load(id: string): Promise<void> {
+  protected selectedMedia = (d: Draft) => d.media.filter((m) => m.selected);
+  protected pct = (v: number) => `${Math.round(v * 100)}%`;
+
+  openGenerator(): void {
+    this.generator.set(true);
+    this.selected.set(null);
+  }
+
+  async openGenerated(draftId: number): Promise<void> {
+    await this.load(this.id());
+    const d = this.drafts().find((x) => x.id === draftId);
+    this.generator.set(false);
+    if (d) this.select(d);
+  }
+
+  /** Carrossel: várias (até 10); post e Reels: só uma. */
+  async toggleMedia(d: Draft, m: StockItem): Promise<void> {
+    const current = this.selectedMedia(d).map((x) => x.id);
+    const next =
+      d.kind === 'carousel'
+        ? m.selected
+          ? current.filter((id) => id !== m.id)
+          : [...current, m.id].slice(0, 10)
+        : m.selected
+          ? []
+          : [m.id];
+    try {
+      const media = await this.api.setDraftMedia(d.id, next);
+      const updated = { ...d, media };
+      this.drafts.update((list) => list.map((x) => (x.id === d.id ? updated : x)));
+      this.selected.set(updated);
+    } catch (e) {
+      this.error.set(errorMessage(e));
+    }
+  }
+
+  async load(id: string): Promise<void> {
     try {
       this.drafts.set(await this.api.drafts(id));
     } catch (e) {
@@ -183,6 +262,7 @@ export class DraftsPage {
   }
 
   select(d: Draft): void {
+    this.generator.set(false);
     this.selected.set(d);
     this.body.set(d.body);
     this.saved.set('');

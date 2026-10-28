@@ -321,6 +321,9 @@ const STATUSES = ['ideia', 'produzindo', 'pronto', 'publicado'];
 
 type DraftRow = Record<string, unknown> & { id: number };
 
+/** Rascunho para a tela: a mídia sugerida vai como lista, não como texto JSON. */
+const draftOut = (d: DraftRow) => ({ ...d, media: JSON.parse(String(d.media ?? '[]')) });
+
 function draftById(id: unknown): DraftRow {
   const d = db.prepare('SELECT * FROM drafts WHERE id = ?').get(Number(id)) as DraftRow | undefined;
   if (!d) throw new HttpError(404, 'Rascunho não encontrado.');
@@ -330,7 +333,7 @@ function draftById(id: unknown): DraftRow {
 v2.get(
   '/accounts/:id/drafts',
   handle((req, res) => {
-    res.json(db.prepare('SELECT * FROM drafts WHERE account_id = ? ORDER BY updated_at DESC').all(account(req).id));
+    res.json((db.prepare('SELECT * FROM drafts WHERE account_id = ? ORDER BY updated_at DESC').all(account(req).id) as DraftRow[]).map(draftOut));
   }),
 );
 
@@ -343,7 +346,7 @@ v2.post(
     const r = db
       .prepare('INSERT INTO drafts(account_id, title, kind, status, body, created_at, updated_at) VALUES(?, ?, ?, ?, ?, ?, ?)')
       .run(a.id, optStr(b.title) ?? 'Sem título', KINDS.includes(b.kind) ? b.kind : 'image', 'ideia', str(b.body, 20000), now, now);
-    res.status(201).json(draftById(r.lastInsertRowid));
+    res.status(201).json(draftOut(draftById(r.lastInsertRowid)));
   }),
 );
 
@@ -368,7 +371,7 @@ v2.put(
       Date.now(),
       d.id,
     );
-    res.json(draftById(d.id));
+    res.json(draftOut(draftById(d.id)));
   }),
 );
 

@@ -3,7 +3,7 @@
 import { ACCOUNTS } from './config.ts';
 import { db, getSetting, setSetting, transaction } from './db.ts';
 import * as ig from './instagram.ts';
-import { connectionToken, read } from './store.ts';
+import { connectionAuth, read } from './store.ts';
 
 const DAY = 24 * 60 * 60 * 1000;
 const running = new Set<string>();
@@ -26,7 +26,7 @@ export async function syncAccount(accountId: string): Promise<{ ok: boolean; err
   const conn = read().connections[accountId];
   if (!conn || conn.tokenExpiresAt < Date.now() || running.has(accountId)) return { ok: false };
   running.add(accountId);
-  const token = connectionToken(accountId)!;
+  const auth = connectionAuth(accountId)!;
   db.prepare(
     `INSERT INTO account_sync(account_id, last_attempt_at) VALUES(?, ?)
      ON CONFLICT(account_id) DO UPDATE SET last_attempt_at = excluded.last_attempt_at`,
@@ -34,12 +34,12 @@ export async function syncAccount(accountId: string): Promise<{ ok: boolean; err
 
   const problems: string[] = [];
   try {
-    const profile = await ig.getProfile(token);
+    const profile = await ig.getProfile(auth, conn.igUserId);
     upsertDaily(accountId, localDate(new Date()), { followers: profile.followers_count ?? null });
 
-    await syncMedia(accountId, conn.igUserId, token, problems);
-    await syncAccountDays(accountId, conn.igUserId, token, problems);
-    await syncAudience(accountId, conn.igUserId, token, problems);
+    await syncMedia(accountId, conn.igUserId, auth, problems);
+    await syncAccountDays(accountId, conn.igUserId, auth, problems);
+    await syncAudience(accountId, conn.igUserId, auth, problems);
   } catch (e) {
     problems.unshift((e as Error).message);
   } finally {
@@ -63,11 +63,11 @@ function summarize(problems: string[]): string {
   return text;
 }
 
-async function syncMedia(accountId: string, igUserId: string, token: string, problems: string[]): Promise<void> {
+async function syncMedia(accountId: string, igUserId: string, auth: ig.Auth, problems: string[]): Promise<void> {
   const known = (db.prepare('SELECT COUNT(*) AS n FROM media WHERE account_id = ?').get(accountId) as { n: number }).n;
   // Primeira vez: 1 ano de histórico. Depois: 90 dias (métricas de posts recentes ainda mudam).
   const since = Date.now() - (known ? 90 : 365) * DAY;
-  const media = await ig.getMediaSince(igUserId, token, since);
+  const media = await ig.getMediaSince(igUserId, auth, since);
 
   const upsert = db.prepare(
     `INSERT INTO media(id, account_id, media_type, product_type, caption, permalink, thumbnail_url, timestamp,
@@ -100,7 +100,7 @@ async function syncMedia(accountId: string, igUserId: string, token: string, pro
   for (const m of media) {
     if (m.media_product_type === 'STORY' || m.media_product_type === 'AD') continue;
     try {
-      const i = await ig.getMediaInsights(m.id, m.media_product_type, token);
+      const i = await ig.getMediaInsights(m.id, m.media_product_type, auth);
       saveInsights.run(
         m.id, i.reach ?? null, i.views ?? null, i.likes ?? m.like_count ?? null, i.comments ?? m.comments_count ?? null,
         i.saved ?? null, i.shares ?? null, i.total_interactions ?? null, i.profile_visits ?? null, i.follows ?? null,
@@ -113,7 +113,7 @@ async function syncMedia(accountId: string, igUserId: string, token: string, pro
   }
 }
 
-async function syncAccountDays(accountId: string, igUserId: string, token: string, problems: string[]): Promise<void> {
+async function syncAccountDays(accountId: string, igUserId: string, auth: ig.Auth, problems: string[]): Promise<void> {
   const last = db
     .prepare('SELECT MAX(date) AS d FROM account_daily WHERE account_id = ? AND reach IS NOT NULL')
     .get(accountId) as { d: string | null };
@@ -131,7 +131,7 @@ async function syncAccountDays(accountId: string, igUserId: string, token: strin
     const next = new Date(day);
     next.setDate(next.getDate() + 1);
     try {
-      const totals = await ig.getAccountTotals(igUserId, token, day.getTime() / 1000, next.getTime() / 1000);
+      const totals = await ig.getAccountTotals(igUserId, auth, day.getTime() / 1000, next.getTime() / 1000);
       upsertDaily(accountId, localDate(day), totals);
     } catch (e) {
       problems.push((e as Error).message);
@@ -140,7 +140,7 @@ async function syncAccountDays(accountId: string, igUserId: string, token: strin
   }
 }
 
-async function syncAudience(accountId: string, igUserId: string, token: string, problems: string[]): Promise<void> {
+async function syncAudience(accountId: string, igUserId: string, auth: ig.Auth, problems: string[]): Promise<void> {
   const key = `audience-synced:${accountId}`;
   if (getSetting<number>(key, 0) > Date.now() - DAY) return; // 1x por dia basta
 
@@ -153,7 +153,7 @@ async function syncAudience(accountId: string, igUserId: string, token: string, 
     ['engaged', 'engaged_audience_demographics'],
   ] as const) {
     try {
-      const demo = await ig.getDemographics(igUserId, token, metric);
+      const demo = await ig.getDemographics(igUserId, auth, metric);
       transaction(() => {
         db.prepare('DELETE FROM account_demographics WHERE account_id = ? AND audience = ?').run(accountId, audience);
         for (const [breakdown, values] of Object.entries(demo)) {
@@ -165,7 +165,7 @@ async function syncAudience(accountId: string, igUserId: string, token: string, 
     }
   }
   try {
-    const hours = await ig.getOnlineFollowers(igUserId, token);
+    const hours = await ig.getOnlineFollowers(igUserId, auth);
     const saveHour = db.prepare(
       `INSERT INTO account_online(account_id, hour, value) VALUES(?, ?, ?)
        ON CONFLICT DO UPDATE SET value = excluded.value`,

@@ -38,7 +38,19 @@ Copie `backend/accounts.example.json` para `backend/accounts.json` e coloque as 
 
 O `accounts.json` e as pastas das contas são dados do cliente: ficam **fora do Git**.
 
-### 1.2 Teste local sem túnel (uma conta de teste)
+### 1.2 Dois jeitos de conectar as contas
+
+- **Pelo Facebook (recomendado):** a conta do Instagram precisa estar vinculada a uma Página do Facebook que você
+  administra. Um único login conecta todas as contas vinculadas e também libera a Descoberta. Funciona em
+  `localhost` (modo Desenvolvimento). O acesso dura cerca de 60 dias; depois, clique em Reconectar.
+  No `.env`: `FB_APP_ID` e `FB_APP_SECRET` (Configurações do app › Básico). No painel da Meta, adicione o produto
+  **Login do Facebook para Empresas**. Se a Meta recusar as permissões, crie uma configuração ali
+  (token de acesso do usuário; permissões `instagram_basic`, `instagram_content_publish`, `instagram_manage_insights`,
+  `pages_show_list`, `pages_read_engagement`, `business_management`) e coloque o ID em `FB_CONFIG_ID`.
+- **Pelo Instagram:** não exige Página, renova sozinho, mas o painel da Meta só oferece esta opção em alguns apps
+  (menu "Configuração da API com login do Instagram"). Use `IG_APP_ID`/`IG_APP_SECRET` ou o token colado (abaixo).
+
+### 1.3 Teste local sem túnel (uma conta de teste)
 
 Para validar o dashboard com uma conta sua antes de usar nas contas de clientes, não precisa de túnel:
 
@@ -55,7 +67,7 @@ Para validar o dashboard com uma conta sua antes de usar nas contas de clientes,
 Funciona sem túnel: sincronização, relatórios, posts, experimentos, rascunhos, Claude, Jev e Descoberta.
 **Publicar não funciona**: o Instagram precisa baixar a mídia de um endereço `https://` público (túnel ou servidor).
 
-### 1.3 Jev (opcional)
+### 1.4 Jev (opcional)
 
 O Jev (TypeSafe AI) revisa legendas e classifica os posts nos Experimentos (veja Ajuda › Jev).
 Coloque `TYPESAFE_API_KEY=` no `backend/.env`, ou deixe como variável de ambiente do Windows, e reinicie.

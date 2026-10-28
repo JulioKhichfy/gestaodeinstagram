@@ -4,15 +4,16 @@ import path from 'node:path';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import multer from 'multer';
 import * as auth from './auth.ts';
-import { ACCOUNTS, config, findAccount, missingConfig, redirectUri } from './config.ts';
+import { ACCOUNTS, config, findAccount, missingConfig, publishMissing, redirectUri, setupMissing } from './config.ts';
 import * as ig from './instagram.ts';
 import { db } from './db.ts';
 import { publish, validate, type PublishRequest } from './publish.ts';
 import { discovery, facebookCallback } from './routes-discovery.ts';
+import { generateRoutes } from './routes-generate.ts';
 import { jevRoutes } from './routes-jev.ts';
 import { v2 } from './routes-v2.ts';
 import { isSyncing, syncAccount } from './sync.ts';
-import { connectionToken, encrypt, read, write } from './store.ts';
+import { connectionAuth, encrypt, read, write } from './store.ts';
 
 fs.mkdirSync(config.mediaDir, { recursive: true });
 
@@ -108,7 +109,7 @@ api.post('/accounts/:id/token', auth.requireSession, async (req, res) => {
   const token = String(req.body?.token ?? '').trim();
   if (!/^[A-Za-z0-9_\-|.]{40,600}$/.test(token)) return void res.status(400).json({ error: 'Token inválido: cole o token inteiro gerado no painel da Meta.' });
   try {
-    const profile = await ig.getProfile(token);
+    const profile = await ig.getProfile({ token, via: 'instagram' });
     if (profile.username.toLowerCase() !== account.username.toLowerCase()) {
       return void res.status(400).json({ error: `Este token é da @${profile.username}, mas esta aba é da @${account.username}.` });
     }
@@ -135,7 +136,7 @@ api.get('/instagram/callback', async (req, res) => {
 
   try {
     const { token, expiresIn, permissions } = await ig.exchangeCode(code);
-    const profile = await ig.getProfile(token);
+    const profile = await ig.getProfile({ token, via: 'instagram' });
     if (profile.username.toLowerCase() !== account.username.toLowerCase()) {
       return back(account.id, {
         error: `Você entrou como @${profile.username}, mas esta aba é da @${account.username}. Saia do Instagram no navegador e tente de novo.`,
@@ -158,7 +159,13 @@ api.delete('/accounts/:id/connection', auth.requireSession, (req, res) => {
 // ---------- Contas ----------
 
 api.get('/config', auth.requireSession, (_req, res) => {
-  res.json({ missing: missingConfig(), redirectUri: redirectUri(), publicBaseUrl: config.publicBaseUrl });
+  res.json({
+    missing: setupMissing(),
+    publishMissing: publishMissing(),
+    instagramLogin: missingConfig().length === 0,
+    redirectUri: redirectUri(),
+    publicBaseUrl: config.publicBaseUrl,
+  });
 });
 
 api.get('/accounts', auth.requireSession, (_req, res) => {
@@ -171,7 +178,8 @@ api.get('/accounts', auth.requireSession, (_req, res) => {
         connected: Boolean(c) && c.tokenExpiresAt > Date.now(),
         tokenExpiresAt: c?.tokenExpiresAt ?? null,
         // Conexões feitas na v1 não pediram a permissão de métricas: precisam reconectar.
-        hasInsights: Boolean(c?.permissions?.includes(ig.INSIGHTS_SCOPE)),
+        hasInsights: Boolean(c?.permissions?.some((p) => p === ig.INSIGHTS_SCOPE || p === 'instagram_manage_insights')),
+        via: c?.via ?? (c ? 'instagram' : null),
         syncing: isSyncing(a.id),
       };
     }),
@@ -186,7 +194,7 @@ function connected(req: Request, res: Response) {
   if (!c || c.tokenExpiresAt < Date.now()) {
     return void res.status(409).json({ error: 'Conta não conectada. Clique em "Conectar Instagram".' });
   }
-  return { igUserId: c.igUserId, token: connectionToken(id)! };
+  return { igUserId: c.igUserId, auth: connectionAuth(id)! };
 }
 
 const handle =
@@ -200,8 +208,8 @@ api.get(
     const conn = connected(req, res);
     if (!conn) return;
     const [profile, limit] = await Promise.all([
-      ig.getProfile(conn.token),
-      ig.getPublishingLimit(conn.igUserId, conn.token).catch(() => null),
+      ig.getProfile(conn.auth, conn.igUserId),
+      ig.getPublishingLimit(conn.igUserId, conn.auth).catch(() => null),
     ]);
     res.json({ profile, limit });
   }),
@@ -213,7 +221,7 @@ api.get(
   handle(async (req, res) => {
     const conn = connected(req, res);
     if (!conn) return;
-    res.json(await ig.getRecentMedia(conn.igUserId, conn.token));
+    res.json(await ig.getRecentMedia(conn.igUserId, conn.auth));
   }),
 );
 
@@ -247,6 +255,8 @@ api.post(
   handle(async (req, res) => {
     const conn = connected(req, res);
     if (!conn) return;
+    const noPublicUrl = publishMissing();
+    if (noPublicUrl) return void res.status(400).json({ error: `Para publicar, o Instagram precisa baixar a mídia de um endereço público. Configure no backend/.env: ${noPublicUrl}.` });
     const body = req.body as PublishRequest;
     const invalid = validate(body);
     if (invalid) return void res.status(400).json({ error: invalid });
@@ -257,7 +267,7 @@ api.post(
     const accountId = req.params.id as string;
     const caption = (body.caption ?? '').slice(0, 300);
     try {
-      const result = await publish(conn.igUserId, conn.token, body);
+      const result = await publish(conn.igUserId, conn.auth, body);
       log.run(accountId, body.type, caption, body.trial ? 1 : 0, 1, null, result.id, result.permalink ?? null, Date.now());
       res.json(result);
     } catch (e) {
@@ -271,6 +281,7 @@ api.post(
 api.use(facebookCallback);
 api.use(auth.requireSession, discovery);
 api.use(auth.requireSession, jevRoutes());
+api.use(auth.requireSession, generateRoutes());
 
 // Rotas da versão 2 (relatórios, experimentos, ciclos, rascunhos, Claude, tráfego pago).
 api.use(auth.requireSession, v2);

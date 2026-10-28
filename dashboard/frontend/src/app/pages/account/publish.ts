@@ -10,6 +10,13 @@ import { Composer } from './composer';
   imports: [Composer, DatePipe],
   template: `
     @if (account(); as acc) {
+      @if (publishMissing(); as missing) {
+        <p class="alert warn">
+          <strong>Publicar está desligado neste PC.</strong> O Instagram precisa baixar a foto ou o vídeo de um endereço
+          público. Falta no <code>backend/.env</code>: {{ missing }}. Você ainda pode montar o post, revisar a legenda com o Jev
+          e salvar como rascunho.
+        </p>
+      }
       @if (draft(); as d) {
         <p class="alert info">Publicando o rascunho <strong>“{{ d.title }}”</strong>. Adicione as mídias e confira a legenda.</p>
       }
@@ -72,8 +79,13 @@ export class PublishPage {
   protected media = signal<MediaItem[]>([]);
   protected loading = signal(false);
   protected draft = signal<Draft | null>(null);
+  protected publishMissing = signal<string | null>(null);
 
   constructor() {
+    this.api
+      .config()
+      .then((c) => this.publishMissing.set(c.publishMissing))
+      .catch(() => undefined);
     effect(() => {
       const id = this.id();
       const connected = this.account()?.connected ?? false;

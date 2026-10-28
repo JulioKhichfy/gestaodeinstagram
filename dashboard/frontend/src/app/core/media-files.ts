@@ -53,6 +53,37 @@ function ratioWarning(w: number, h: number): string | undefined {
   return undefined;
 }
 
+/** Recorte central que coloca a imagem dentro das proporções do feed (null = já está dentro). */
+export function feedCrop(w: number, h: number): { x: number; y: number; width: number; height: number } | null {
+  const r = w / h;
+  if (r < FEED_RATIO_MIN) {
+    const height = Math.round(w / FEED_RATIO_MIN);
+    return { x: 0, y: Math.round((h - height) / 2), width: w, height };
+  }
+  if (r > FEED_RATIO_MAX) {
+    const width = Math.round(h * FEED_RATIO_MAX);
+    return { x: Math.round((w - width) / 2), y: 0, width, height: h };
+  }
+  return null;
+}
+
+/** Foto de banco de imagens: corta pelo centro para 4:5 (ou 1.91:1) quando sai do que o feed aceita. */
+export async function cropToFeed(file: File): Promise<File> {
+  const bitmap = await createImageBitmap(file);
+  const crop = feedCrop(bitmap.width, bitmap.height);
+  if (!crop) {
+    bitmap.close();
+    return file;
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = crop.width;
+  canvas.height = crop.height;
+  canvas.getContext('2d')!.drawImage(bitmap, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height);
+  bitmap.close();
+  const blob = await canvasToJpeg(canvas);
+  return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+}
+
 export async function loadImage(file: File): Promise<LocalMedia> {
   let bitmap: ImageBitmap;
   try {

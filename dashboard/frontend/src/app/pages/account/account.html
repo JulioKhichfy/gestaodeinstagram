@@ -10,7 +10,7 @@
     <p class="alert warn">
       <strong>Reconecte esta conta</strong> para liberar relatórios: a versão 2 precisa da permissão de métricas
       (<code>instagram_business_manage_insights</code>), que não foi pedida na primeira conexão.
-      <button type="button" class="btn ghost" [disabled]="connecting()" (click)="connect()">Reconectar agora</button>
+      <button type="button" class="btn ghost" [disabled]="connecting()" (click)="connect(acc.via === 'facebook' ? 'facebook' : 'instagram')">Reconectar agora</button>
     </p>
   }
 
@@ -48,9 +48,15 @@
       @if (acc.connected) {
         <span class="pill ok">Conectada</span>
         @if (tokenDaysLeft() !== null) {
-          <small class="muted" title="O backend renova automaticamente enquanto estiver rodando">
-            Acesso válido por {{ tokenDaysLeft() }} dias (renovação automática)
-          </small>
+          @if (acc.via === 'facebook') {
+            <small class="muted" title="A Meta não deixa renovar o login do Facebook sem você: clique em Reconectar antes de vencer">
+              Conectada pelo Facebook · acesso válido por {{ tokenDaysLeft() }} dias
+            </small>
+          } @else {
+            <small class="muted" title="O backend renova automaticamente enquanto estiver rodando">
+              Acesso válido por {{ tokenDaysLeft() }} dias (renovação automática)
+            </small>
+          }
         }
         @if (overview()?.limit; as l) {
           <small class="muted">Publicações via API nas últimas 24h: {{ l.used }}/{{ l.total }}</small>
@@ -64,14 +70,18 @@
         </small>
         <div class="buttons">
           <button type="button" class="btn ghost" [disabled]="acc.syncing" (click)="sync()">Sincronizar</button>
-          <button type="button" class="btn ghost" [disabled]="connecting()" (click)="connect()">Reconectar</button>
+          <button type="button" class="btn ghost" [disabled]="connecting()" (click)="connect(acc.via === 'facebook' ? 'facebook' : 'instagram')">Reconectar</button>
           <button type="button" class="btn ghost danger" (click)="disconnect()">Desconectar</button>
         </div>
       } @else {
-        <button type="button" class="btn primary" [disabled]="connecting()" (click)="connect()">
-          {{ connecting() ? 'Abrindo Instagram…' : 'Conectar Instagram' }}
+        <button type="button" class="btn primary" [disabled]="connecting()" (click)="connect('facebook')">
+          {{ connecting() ? 'Abrindo…' : 'Conectar pelo Facebook' }}
         </button>
-        <small class="muted">Você fará login na tela oficial do Instagram como &#64;{{ acc.username }}.</small>
+        <small class="muted">Login na tela oficial do Facebook. A &#64;{{ acc.username }} precisa estar vinculada a uma Página
+          que você administra. Um login conecta todas as contas vinculadas.</small>
+        @if (instagramLogin()) {
+          <button type="button" class="btn ghost" [disabled]="connecting()" (click)="connect('instagram')">Conectar pelo Instagram</button>
+        }
         <details class="token">
           <summary>Sem túnel? Conectar com token (teste local)</summary>
           <small class="muted">No painel da Meta: Instagram › Configuração da API com login do Instagram › Gerar token

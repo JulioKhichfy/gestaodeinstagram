@@ -175,7 +175,7 @@ function accountProfile(account: AccountConfig): string | null {
   }
 }
 
-function logCall(db: DatabaseSync, accountId: string, kind: string, r: SystemOneResponse): void {
+export function logCall(db: DatabaseSync, accountId: string, kind: string, r: SystemOneResponse): void {
   db.prepare('INSERT INTO jev_calls(account_id, kind, input_tokens, output_tokens, created_at) VALUES(?, ?, ?, ?, ?)').run(
     accountId,
     kind,
