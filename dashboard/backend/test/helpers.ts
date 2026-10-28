@@ -9,5 +9,8 @@ process.env.MEDIA_DIR = path.join(tmp, 'media');
 fs.mkdirSync(process.env.MEDIA_DIR, { recursive: true });
 // Contas fictícias: os testes nunca dependem do accounts.json real.
 process.env.ACCOUNTS_FILE = path.join(import.meta.dirname, 'fixtures', 'accounts.json');
+// Nunca chamar o Jev de verdade nos testes, mesmo que a chave exista no ambiente do PC.
+delete process.env.TYPESAFE_API_KEY;
+delete process.env.JEV_BASE_URL;
 
 export const TMP = tmp;

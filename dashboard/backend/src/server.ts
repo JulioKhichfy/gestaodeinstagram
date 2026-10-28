@@ -9,6 +9,7 @@ import * as ig from './instagram.ts';
 import { db } from './db.ts';
 import { publish, validate, type PublishRequest } from './publish.ts';
 import { discovery, facebookCallback } from './routes-discovery.ts';
+import { jevRoutes } from './routes-jev.ts';
 import { v2 } from './routes-v2.ts';
 import { isSyncing, syncAccount } from './sync.ts';
 import { connectionToken, encrypt, read, write } from './store.ts';
@@ -82,6 +83,42 @@ api.post('/accounts/:id/connect', auth.requireSession, (req, res) => {
   res.json({ url: ig.authorizeUrl(state) });
 });
 
+function saveConnection(accountId: string, profile: ig.Profile, token: string, expiresIn: number, permissions: string[]): void {
+  write((d) => {
+    d.connections[accountId] = {
+      igUserId: profile.user_id,
+      username: profile.username,
+      tokenEnc: encrypt(token),
+      tokenIssuedAt: Date.now(),
+      tokenExpiresAt: Date.now() + expiresIn * 1000,
+      permissions,
+    };
+  });
+  syncAccount(accountId).catch((e) => console.error('sync:', e));
+}
+
+/**
+ * Conexão sem túnel (teste local): token gerado no painel da Meta (Instagram > Configuração da API com login
+ * do Instagram > Gerar token). Esses tokens já são de longa duração (60 dias) e trazem as permissões do caso
+ * de uso do app. O token chega uma vez, é conferido no Instagram e guardado criptografado; nunca volta ao navegador.
+ */
+api.post('/accounts/:id/token', auth.requireSession, async (req, res) => {
+  const account = findAccount(req.params.id as string);
+  if (!account) return void res.status(404).json({ error: 'Conta desconhecida.' });
+  const token = String(req.body?.token ?? '').trim();
+  if (!/^[A-Za-z0-9_\-|.]{40,600}$/.test(token)) return void res.status(400).json({ error: 'Token inválido: cole o token inteiro gerado no painel da Meta.' });
+  try {
+    const profile = await ig.getProfile(token);
+    if (profile.username.toLowerCase() !== account.username.toLowerCase()) {
+      return void res.status(400).json({ error: `Este token é da @${profile.username}, mas esta aba é da @${account.username}.` });
+    }
+    saveConnection(account.id, profile, token, 60 * 86_400, ig.SCOPES);
+    res.json({ ok: true, username: profile.username });
+  } catch (e) {
+    res.status(400).json({ error: (e as Error).message });
+  }
+});
+
 api.get('/instagram/callback', async (req, res) => {
   const { code, state, error_description } = req.query as Record<string, string | undefined>;
   const pending = state ? oauthStates.get(state) : undefined;
@@ -104,17 +141,7 @@ api.get('/instagram/callback', async (req, res) => {
         error: `Você entrou como @${profile.username}, mas esta aba é da @${account.username}. Saia do Instagram no navegador e tente de novo.`,
       });
     }
-    write((d) => {
-      d.connections[account.id] = {
-        igUserId: profile.user_id,
-        username: profile.username,
-        tokenEnc: encrypt(token),
-        tokenIssuedAt: Date.now(),
-        tokenExpiresAt: Date.now() + expiresIn * 1000,
-        permissions,
-      };
-    });
-    syncAccount(account.id).catch((e) => console.error('sync:', e));
+    saveConnection(account.id, profile, token, expiresIn, permissions);
     back(account.id, { connected: '1' });
   } catch (e) {
     back(account.id, { error: (e as Error).message });
@@ -243,6 +270,7 @@ api.post(
 // Descoberta de perfis (v3): a volta do login do Facebook é pública; o resto exige sessão.
 api.use(facebookCallback);
 api.use(auth.requireSession, discovery);
+api.use(auth.requireSession, jevRoutes());
 
 // Rotas da versão 2 (relatórios, experimentos, ciclos, rascunhos, Claude, tráfego pago).
 api.use(auth.requireSession, v2);

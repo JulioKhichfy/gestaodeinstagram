@@ -91,6 +91,8 @@ export interface Post {
   style: string | null;
   pillar: string | null;
   notes: string;
+  /** 'jev' = gancho/estilo sugeridos pelo Jev, ainda não confirmados. */
+  taggedBy: string | null;
 }
 
 export interface Kpis {
@@ -367,6 +369,51 @@ export function errorMessage(e: unknown): string {
   return err?.message ?? 'Erro inesperado.';
 }
 
+// ---------- Jev (TypeSafe AI) ----------
+
+export interface JevStatus {
+  configured: boolean;
+  model: string;
+  autotagMinConfidence: number;
+  usage: { kind: string; calls: number; inputTokens: number }[];
+}
+
+export interface JevDimension {
+  key: 'gancho' | 'clareza' | 'cta' | 'tom';
+  label: string;
+  value: number;
+  weight: number;
+  level: string;
+  confidence: number | null;
+  uncertain: boolean;
+}
+
+export interface JevClassification {
+  value: string;
+  label: string;
+  confidence: number;
+  uncertain: boolean;
+}
+
+export interface CaptionReview {
+  grade: number;
+  dimensions: JevDimension[];
+  objective: JevClassification;
+  hook: JevClassification | null;
+  style: JevClassification | null;
+  risk: number;
+  tips: string[];
+  warnings: string[];
+  toneEvaluated: boolean;
+}
+
+export interface AutotagResult {
+  tagged: number;
+  uncertain: number;
+  failed: number;
+  remaining: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class Api {
   private http = inject(HttpClient);
@@ -401,6 +448,9 @@ export class Api {
   }
   disconnect(id: string) {
     return firstValueFrom(this.http.delete<void>(`/api/accounts/${id}/connection`));
+  }
+  connectWithToken(id: string, token: string) {
+    return firstValueFrom(this.http.post<{ ok: true; username: string }>(`/api/accounts/${id}/token`, { token }));
   }
 
   upload(file: File) {
@@ -535,6 +585,19 @@ export class Api {
   }
   updateDiscovered(profileId: number, body: Partial<{ status: DiscoveryStatus; notes: string; watch: boolean }>) {
     return firstValueFrom(this.http.patch<DiscoveredProfile>(`/api/discovery/${profileId}`, body));
+  }
+
+  jevStatus() {
+    return firstValueFrom(this.http.get<JevStatus>('/api/jev/status'));
+  }
+  reviewCaption(id: string, body: { caption: string; kind?: string }) {
+    return firstValueFrom(this.http.post<CaptionReview>(`/api/accounts/${id}/jev/review`, body));
+  }
+  autotagPending(id: string) {
+    return firstValueFrom(this.http.get<{ pending: number }>(`/api/accounts/${id}/jev/autotag`));
+  }
+  autotag(id: string) {
+    return firstValueFrom(this.http.post<AutotagResult>(`/api/accounts/${id}/jev/autotag`, {}));
   }
 }
 

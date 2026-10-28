@@ -27,9 +27,10 @@ export interface AccountConfig {
 export const PROJECT_ROOT = path.resolve(import.meta.dirname, '..', '..', '..');
 
 // As contas ficam em backend/accounts.json, que é local e fica fora do Git (dados de clientes).
-// Sem ele, o dashboard sobe com o exemplo (accounts.example.json). ACCOUNTS_FILE troca o arquivo (testes).
+// Sem ele, o dashboard sobe com o exemplo (accounts.example.json). ACCOUNTS_FILE troca o arquivo
+// (testes, ou uma conta de teste no .env); caminho relativo à pasta backend.
 const accountsFile =
-  process.env.ACCOUNTS_FILE ??
+  (process.env.ACCOUNTS_FILE ? path.resolve(import.meta.dirname, '..', process.env.ACCOUNTS_FILE) : undefined) ??
   [path.resolve(import.meta.dirname, '..', 'accounts.json'), path.resolve(import.meta.dirname, '..', 'accounts.example.json')].find((f) =>
     fs.existsSync(f),
   )!;
@@ -71,6 +72,10 @@ export const config = {
   claudeBin: env.CLAUDE_BIN ?? 'claude',
   /** Modelo opcional para o Claude Code; vazio = padrão da sua assinatura. */
   claudeModel: env.CLAUDE_MODEL ?? '',
+  /** Jev (TypeSafe AI): avaliações rápidas e tipadas. Sem chave, as funções do Jev ficam desligadas. */
+  typesafeApiKey: env.TYPESAFE_API_KEY ?? '',
+  jevModel: env.JEV_MODEL || 'jev-latest',
+  jevBaseUrl: (env.JEV_BASE_URL || 'https://api.typesafe.ai').replace(/\/+$/, ''),
   // DATA_DIR/MEDIA_DIR permitem que os testes usem pastas temporárias.
   dataDir: env.DATA_DIR ?? path.resolve(import.meta.dirname, '..', 'data'),
   mediaDir: env.MEDIA_DIR ?? path.resolve(import.meta.dirname, '..', 'media'),

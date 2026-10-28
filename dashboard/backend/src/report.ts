@@ -41,6 +41,8 @@ export interface PostRow {
   scoreParts: Record<string, number>;
   hook: string | null;
   style: string | null;
+  /** 'jev' = gancho/estilo sugeridos pelo Jev e ainda não confirmados; null = registrados à mão. */
+  taggedBy: string | null;
   pillar: string | null;
   notes: string;
 }
@@ -72,7 +74,7 @@ export function listPosts(db: DatabaseSync, accountId: string, filter: PostFilte
     .prepare(
       `SELECT m.*, i.reach, i.views, i.likes AS i_likes, i.comments AS i_comments, i.saved, i.shares,
               i.profile_visits, i.follows, i.total_interactions, i.avg_watch_time_ms,
-              t.hook, t.style, t.pillar, t.notes
+              t.hook, t.style, t.pillar, t.notes, t.tagged_by
        FROM media m
        LEFT JOIN media_insights i ON i.media_id = m.id
        LEFT JOIN media_tags t ON t.media_id = m.id
@@ -117,6 +119,7 @@ export function listPosts(db: DatabaseSync, accountId: string, filter: PostFilte
       style: r.style,
       pillar: r.pillar,
       notes: r.notes ?? '',
+      taggedBy: r.tagged_by ?? null,
     };
   });
   return filter.format ? posts.filter((p) => p.format === filter.format) : posts;

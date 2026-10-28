@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { Api, Artifact, Draft, PostType, errorMessage } from '../../core/api';
+import { JevReview } from '../../shared/jev-review';
 import {
   CAPTION_MAX,
   CAROUSEL_MAX,
@@ -26,7 +27,7 @@ const ACCEPT: Record<PostType, string> = {
 @Component({
   selector: 'app-composer',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TextCard, ClaudePanel],
+  imports: [TextCard, ClaudePanel, JevReview],
   template: `
     <section class="card composer">
       <h2>Nova publicação</h2>
@@ -142,6 +143,7 @@ const ACCEPT: Record<PostType, string> = {
 
       <app-claude-panel [accountId]="accountId()" [currentText]="caption()"
                         [artifacts]="claudeArtifacts()" (use)="useClaude($event)" />
+      <app-jev-review [accountId]="accountId()" [caption]="caption()" [kind]="type()" />
 
       @if (status() === 'error') {
         <p class="alert error">{{ message() }}</p>

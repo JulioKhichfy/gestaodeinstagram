@@ -46,6 +46,10 @@ export function engagementRate(interactions: number | null | undefined, reach: n
   return round((interactions / reach) * 100);
 }
 
+/** Opções iniciais do registro de experimento (cada conta pode criar outras). */
+export const DEFAULT_HOOKS = ['Pergunta', 'Número/lista', 'Erro comum', 'Antes e depois', 'Bastidor', 'Polêmica/contraste', 'Promessa', 'História pessoal'];
+export const DEFAULT_STYLES = ['Educativo', 'Inspiracional', 'Bastidores', 'Prova social', 'Oferta/venda', 'Humor', 'Tutorial'];
+
 export type Format = 'reels' | 'carrossel' | 'post' | 'video';
 
 export const FORMAT_LABELS: Record<Format, string> = {

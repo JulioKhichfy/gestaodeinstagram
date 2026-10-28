@@ -193,6 +193,20 @@ const MIGRATIONS: string[] = [
     UNIQUE (account_id, username)
   );
   `,
+  // Jev (TypeSafe AI): gancho/estilo sugeridos e registro de uso.
+  `
+  ALTER TABLE media_tags ADD COLUMN tagged_by TEXT;       -- 'jev' até a usuária confirmar; NULL = manual
+  ALTER TABLE media_tags ADD COLUMN tag_confidence REAL;  -- menor confiança entre gancho e estilo
+
+  CREATE TABLE jev_calls (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id TEXT NOT NULL,
+    kind TEXT NOT NULL,          -- review | autotag
+    input_tokens INTEGER,
+    output_tokens INTEGER,
+    created_at INTEGER NOT NULL
+  );
+  `,
 ];
 
 export function openDb(file: string): DatabaseSync {

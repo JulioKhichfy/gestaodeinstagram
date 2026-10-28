@@ -72,6 +72,15 @@
           {{ connecting() ? 'Abrindo Instagram…' : 'Conectar Instagram' }}
         </button>
         <small class="muted">Você fará login na tela oficial do Instagram como &#64;{{ acc.username }}.</small>
+        <details class="token">
+          <summary>Sem túnel? Conectar com token (teste local)</summary>
+          <small class="muted">No painel da Meta: Instagram › Configuração da API com login do Instagram › Gerar token
+            (a conta precisa ser testadora do app). O token vale 60 dias e fica guardado criptografado.</small>
+          <form (submit)="connectWithToken($event)">
+            <input type="password" name="token" autocomplete="off" aria-label="Token do Instagram" placeholder="Cole o token aqui" />
+            <button type="submit" class="btn ghost" [disabled]="connecting()">Conectar</button>
+          </form>
+        </details>
       }
     </div>
   </section>

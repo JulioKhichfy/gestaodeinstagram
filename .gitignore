@@ -6,7 +6,8 @@
 !/dashboard/
 
 # Dados de clientes e segredos dentro do dashboard
-dashboard/backend/accounts.json
+dashboard/backend/accounts*.json
+!dashboard/backend/accounts.example.json
 dashboard/backend/.env
 dashboard/backend/data/
 dashboard/backend/media/

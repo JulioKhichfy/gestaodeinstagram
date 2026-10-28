@@ -146,6 +146,29 @@ describe('API', () => {
     assert.doesNotMatch(JSON.stringify([st.json, w.json, saved.json]), /token(Enc)?"\s*:\s*"/i);
   });
 
+  it('jev: exige sessão e fica desligado sem chave', async () => {
+    assert.equal((await api('GET', '/jev/status', undefined, false)).status, 401);
+    const st = await api('GET', '/jev/status');
+    assert.equal(st.json.configured, false);
+    const r = await api('POST', '/accounts/loja/jev/review', { caption: 'Olá' });
+    assert.equal(r.status, 503);
+    assert.match(r.json.error, /TYPESAFE_API_KEY/);
+    assert.equal((await api('POST', '/accounts/xyz/jev/review', { caption: 'Olá' })).status, 404);
+  });
+
+  it('salvar o registro à mão confirma a sugestão do Jev', async () => {
+    db.prepare(`UPDATE media_tags SET tagged_by = 'jev', tag_confidence = 0.7 WHERE media_id = 'm1'`).run();
+    assert.equal((await api('GET', '/accounts/autora/posts')).json[0].taggedBy, 'jev');
+    await api('PUT', '/media/m1/tags', { hook: 'Pergunta', style: 'Educativo' });
+    assert.equal((await api('GET', '/accounts/autora/posts')).json[0].taggedBy, null);
+  });
+
+  it('conexão por token: valida antes de chamar o Instagram', async () => {
+    assert.equal((await api('POST', '/accounts/loja/token', { token: 'x' }, false)).status, 401);
+    assert.equal((await api('POST', '/accounts/loja/token', { token: 'curto' })).status, 400);
+    assert.equal((await api('POST', '/accounts/xyz/token', { token: 'IG'.repeat(30) })).status, 404);
+  });
+
   it('alertas de todas as contas', async () => {
     const r = await api('GET', '/alerts');
     assert.equal(r.json.length, 4);

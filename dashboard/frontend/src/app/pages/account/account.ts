@@ -99,6 +99,26 @@ export class AccountPage {
     }
   }
 
+  async connectWithToken(event: Event): Promise<void> {
+    event.preventDefault();
+    const form = event.target as HTMLFormElement;
+    const token = String(new FormData(form).get('token') ?? '').trim();
+    if (!token) return;
+    this.connecting.set(true);
+    this.banner.set(null);
+    try {
+      const { username } = await this.api.connectWithToken(this.id(), token);
+      form.reset();
+      this.banner.set({ kind: 'ok', text: `@${username} conectada. Sincronizando os dados…` });
+      await this.store.reload();
+      this.store.watchSync();
+    } catch (e) {
+      this.banner.set({ kind: 'error', text: errorMessage(e) });
+    } finally {
+      this.connecting.set(false);
+    }
+  }
+
   async disconnect(): Promise<void> {
     const acc = this.account();
     if (!acc || !confirm(`Desconectar @${acc.username} do dashboard?`)) return;

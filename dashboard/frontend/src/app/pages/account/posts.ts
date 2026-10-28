@@ -71,7 +71,7 @@ const SIGNAL_LABELS: Record<string, string> = {
                 @for (c of columns; track c.key) {
                   <td class="num">{{ cell(p, c.key) }}</td>
                 }
-                <td><small>{{ tagsOf(p) }}</small></td>
+                <td><small>{{ tagsOf(p) }}@if (p.taggedBy === 'jev') { <span class="jev-mark" title="Sugerido pelo Jev: abra o post e salve para confirmar"> ◆</span> }</small></td>
               </tr>
               @if (open() === p.id) {
                 <tr class="detail">
@@ -91,6 +91,9 @@ const SIGNAL_LABELS: Record<string, string> = {
                       </div>
                       <form class="tags" (submit)="saveTags($event, p)">
                         <h4>Registro do experimento</h4>
+                        @if (p.taggedBy === 'jev') {
+                          <p class="muted small">◆ Gancho e estilo sugeridos pelo Jev. Corrija se precisar e salve para confirmar.</p>
+                        }
                         <label class="field"><span>Gancho</span><input name="hook" list="hook-options" [value]="p.hook ?? ''" /></label>
                         <label class="field"><span>Estilo</span><input name="style" list="style-options" [value]="p.style ?? ''" /></label>
                         <label class="field"><span>Pilar de conteúdo</span><input name="pillar" list="pillar-options" [value]="p.pillar ?? ''" placeholder="Ex.: bastidores, produto, dica" /></label>
@@ -113,7 +116,16 @@ const SIGNAL_LABELS: Record<string, string> = {
     </section>
 
     <section class="card">
-      <h2>Experimentos: o que funciona melhor</h2>
+      <div class="exp-head">
+        <h2>Experimentos: o que funciona melhor</h2>
+        @if (jevOn() && jevPending() > 0) {
+          <button type="button" class="btn ghost" [disabled]="tagging()" (click)="autotag()"
+                  title="O Jev lê a legenda e sugere gancho e estilo; só grava quando tem confiança alta">
+            @if (tagging()) { <span class="spinner"></span> Classificando… } @else { ◆ Classificar {{ jevPending() }} post(s) com o Jev }
+          </button>
+        }
+      </div>
+      @if (tagMessage()) { <p class="alert info">{{ tagMessage() }}</p> }
       @if (experiments(); as e) {
         @if (!e.tagged) {
           <p class="muted">Clique em um post acima e registre o <strong>gancho</strong> e o <strong>estilo</strong> usados.
@@ -175,6 +187,9 @@ const SIGNAL_LABELS: Record<string, string> = {
       span { display: block; height: 100%; background: var(--series-1); border-radius: 4px; } }
     .tags { display: grid; gap: 8px; align-content: start; }
     .best td { background: var(--ok-bg); }
+    .exp-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;
+      h2 { margin: 0; } }
+    .jev-mark { color: var(--series-1); }
     @media (max-width: 800px) { .detail-grid { grid-template-columns: 1fr; } }
   `,
 })
@@ -197,6 +212,10 @@ export class PostsPage {
   protected open = signal<string | null>(null);
   protected loading = signal(false);
   protected error = signal('');
+  protected jevOn = signal(false);
+  protected jevPending = signal(0);
+  protected tagging = signal(false);
+  protected tagMessage = signal('');
 
   protected sorted = computed(() => {
     const key = this.sortKey();
@@ -224,10 +243,41 @@ export class PostsPage {
       const [posts, experiments] = await Promise.all([this.api.posts(id, filter), this.api.experiments(id)]);
       this.posts.set(posts);
       this.experiments.set(experiments);
+      this.loadJev(id);
     } catch (e) {
       this.error.set(errorMessage(e));
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  private async loadJev(id: string): Promise<void> {
+    try {
+      const status = await this.api.jevStatus();
+      this.jevOn.set(status.configured);
+      if (status.configured) this.jevPending.set((await this.api.autotagPending(id)).pending);
+    } catch {
+      this.jevOn.set(false);
+    }
+  }
+
+  async autotag(): Promise<void> {
+    this.tagging.set(true);
+    this.tagMessage.set('');
+    this.error.set('');
+    try {
+      const r = await this.api.autotag(this.id());
+      const parts = [`${r.tagged} post(s) classificado(s) pelo Jev (marcados com ◆).`];
+      if (r.uncertain) parts.push(`${r.uncertain} ficaram sem sugestão porque o Jev estava em dúvida: registre à mão.`);
+      if (r.failed) parts.push(`${r.failed} falharam; tente de novo.`);
+      if (r.remaining) parts.push(`Faltam ${r.remaining}: clique de novo para continuar.`);
+      this.tagMessage.set(parts.join(' '));
+      this.jevPending.set(r.remaining);
+      this.store.dataVersion.update((v) => v + 1);
+    } catch (e) {
+      this.error.set(errorMessage(e));
+    } finally {
+      this.tagging.set(false);
     }
   }
 
@@ -272,7 +322,7 @@ export class PostsPage {
     const tags = { hook: val('hook'), style: val('style'), pillar: val('pillar'), notes: String(form.get('notes') ?? '') };
     try {
       await this.api.saveTags(p.id, tags);
-      this.posts.update((list) => list.map((x) => (x.id === p.id ? { ...x, ...tags } : x)));
+      this.posts.update((list) => list.map((x) => (x.id === p.id ? { ...x, ...tags, taggedBy: null } : x)));
       this.experiments.set(await this.api.experiments(this.id()));
       this.open.set(null);
     } catch (e) {

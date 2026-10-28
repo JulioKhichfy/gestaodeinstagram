@@ -4,7 +4,7 @@ import express, { type NextFunction, type Request, type Response } from 'express
 import { ACCOUNTS, findAccount, type AccountConfig, type AdRecommendation } from './config.ts';
 import { ARTIFACTS, ClaudeError, askClaude, type Artifact } from './claude.ts';
 import { db, setSetting } from './db.ts';
-import { DEFAULT_THRESHOLDS, DEFAULT_WEIGHTS, SIGNALS, SIGNAL_LABELS, toCsv, type Format } from './metrics.ts';
+import { DEFAULT_HOOKS, DEFAULT_STYLES, DEFAULT_THRESHOLDS, DEFAULT_WEIGHTS, SIGNALS, SIGNAL_LABELS, toCsv, type Format } from './metrics.ts';
 import {
   accountReport,
   boostCandidates,
@@ -205,14 +205,11 @@ v2.put(
     db.prepare(
       `INSERT INTO media_tags(media_id, account_id, hook, style, pillar, notes) VALUES(?, ?, ?, ?, ?, ?)
        ON CONFLICT(media_id) DO UPDATE SET hook = excluded.hook, style = excluded.style, pillar = excluded.pillar,
-         notes = excluded.notes`,
+         notes = excluded.notes, tagged_by = NULL, tag_confidence = NULL`,
     ).run(req.params.mediaId as string, media.account_id, optStr(b.hook), optStr(b.style), optStr(b.pillar), str(b.notes));
     res.status(204).end();
   }),
 );
-
-export const DEFAULT_HOOKS = ['Pergunta', 'Número/lista', 'Erro comum', 'Antes e depois', 'Bastidor', 'Polêmica/contraste', 'Promessa', 'História pessoal'];
-export const DEFAULT_STYLES = ['Educativo', 'Inspiracional', 'Bastidores', 'Prova social', 'Oferta/venda', 'Humor', 'Tutorial'];
 
 v2.get(
   '/accounts/:id/experiments',

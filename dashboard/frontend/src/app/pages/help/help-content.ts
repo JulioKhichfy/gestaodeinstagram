@@ -303,6 +303,47 @@ export const HELP: HelpSection[] = [
     ],
   },
   {
+    id: 'jev',
+    title: 'Revisão e classificação com o Jev',
+    intro:
+      'O Jev (TypeSafe AI) é um modelo de IA feito para avaliar, não para escrever: lê um texto e responde perguntas fechadas (nota, categoria, sim/não) em menos de um segundo. Divisão de trabalho: o Claude escreve, o Jev confere.',
+    items: [
+      {
+        q: 'Revisar legenda',
+        a: [
+          'Em Publicar e em Rascunhos, clique em "Revisar legenda". O Jev dá uma nota de 0 a 100 somando quatro dimensões com pesos fixos:',
+          '- Gancho (peso 35): a 1ª linha, que aparece antes do "mais", faz parar de rolar?',
+          '- Clareza (peso 25): uma mensagem principal, fácil de ler no celular?',
+          '- Chamada para ação (peso 20): pede salvar, comentar, enviar, clicar no link ou chamar no direct?',
+          '- Tom da marca (peso 20): soa como o claude.md da conta descreve? Sem claude.md, essa dimensão fica de fora.',
+          'Também aponta o objetivo da legenda (alcance, salvamento, conversa, venda, autoridade), o tipo de gancho e o estilo, e avisa sobre promessa exagerada ou tema sensível.',
+          'Leitura da nota: 75 ou mais, pronta para publicar; de 50 a 74, dá para melhorar; abaixo de 50, precisa de ajustes. Para reescrever, use "Pedir ao Claude › Melhorar texto" e revise de novo.',
+        ],
+      },
+      {
+        q: 'O que é "Jev em dúvida"?',
+        a: [
+          'Cada resposta vem com a confiança do Jev. Abaixo de 50%, a tela avisa "Jev em dúvida": a avaliação pode estar errada e vale conferir com atenção.',
+        ],
+      },
+      {
+        q: 'Classificar posts nos Experimentos',
+        a: [
+          'Em Posts, o botão "Classificar com o Jev" lê a legenda dos posts sem registro e sugere o gancho e o estilo, até 40 posts por clique.',
+          'Ele só grava quando tem confiança alta (60% ou mais). Os demais ficam para você registrar à mão.',
+          'Sugestões do Jev aparecem com ◆. Ao abrir o post e salvar o registro, ele passa a valer como seu (o ◆ some).',
+        ],
+      },
+      {
+        q: 'Custo e privacidade',
+        a: [
+          'O Jev usa a chave de API da TypeSafe guardada no backend (TYPESAFE_API_KEY); ela nunca vai para o navegador. A cobrança é por tokens de entrada: uma revisão de legenda usa cerca de 1.500 tokens.',
+          'Vão para o Jev só a legenda, o formato e o claude.md da conta. Nenhum token do Instagram nem métrica.',
+        ],
+      },
+    ],
+  },
+  {
     id: 'trafego',
     title: 'Tráfego pago (impulsionar)',
     intro: 'O dashboard indica o que impulsionar, ajuda a planejar e registra os resultados. O impulsionamento em si é feito no app (Turbinar) ou no Gerenciador de Anúncios.',

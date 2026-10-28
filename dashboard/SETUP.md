@@ -38,6 +38,29 @@ Copie `backend/accounts.example.json` para `backend/accounts.json` e coloque as 
 
 O `accounts.json` e as pastas das contas são dados do cliente: ficam **fora do Git**.
 
+### 1.2 Teste local sem túnel (uma conta de teste)
+
+Para validar o dashboard com uma conta sua antes de usar nas contas de clientes, não precisa de túnel:
+
+1. Crie `backend/accounts.teste.json` com a sua conta (mesmo formato do passo 1.1) e, no `backend/.env`,
+   coloque `ACCOUNTS_FILE=accounts.teste.json`. O `accounts.json` principal fica intacto; para voltar a ele,
+   comente essa linha e reinicie.
+2. Faça os passos 3.1 a 3.4, 3.6 e 3.7 do app da Meta (o URI de redirecionamento do 3.5 não é necessário).
+3. No painel do app: **Instagram › Configuração da API com login do Instagram › Gerar token** ao lado da conta
+   testadora. Copie o token.
+4. No dashboard, na aba da conta: **"Sem túnel? Conectar com token"**, cole e clique em Conectar. O token vale 60 dias,
+   é conferido no Instagram e fica guardado criptografado.
+5. A Descoberta (login do Facebook) também funciona sem túnel (passo 7).
+
+Funciona sem túnel: sincronização, relatórios, posts, experimentos, rascunhos, Claude, Jev e Descoberta.
+**Publicar não funciona**: o Instagram precisa baixar a mídia de um endereço `https://` público (túnel ou servidor).
+
+### 1.3 Jev (opcional)
+
+O Jev (TypeSafe AI) revisa legendas e classifica os posts nos Experimentos (veja Ajuda › Jev).
+Coloque `TYPESAFE_API_KEY=` no `backend/.env`, ou deixe como variável de ambiente do Windows, e reinicie.
+Sem a chave, essas funções ficam ocultas.
+
 ## 2. Túnel ngrok (endereço fixo gratuito)
 
 1. Crie uma conta grátis em https://ngrok.com

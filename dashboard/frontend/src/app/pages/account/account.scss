@@ -12,6 +12,10 @@
   p { margin: 2px 0 0; } }
 .stats { list-style: none; display: flex; gap: 20px; padding: 0; margin: 10px 0 0; flex-wrap: wrap; }
 .side { display: grid; gap: 6px; justify-items: end; text-align: right; }
+.token { max-width: 340px; text-align: left; font-size: .85rem;
+  summary { cursor: pointer; color: var(--muted); }
+  form { display: flex; gap: 6px; margin-top: 6px; }
+  input { flex: 1; min-width: 0; } }
 .buttons { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; justify-content: flex-end; }
 .spinner.inline { display: inline-block; width: 12px; height: 12px; vertical-align: -2px; }
 

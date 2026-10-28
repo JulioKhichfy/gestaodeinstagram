@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { Api, Artifact, Draft, DraftKind, DraftStatus, errorMessage } from '../../core/api';
 import { dateTimeBR } from '../../core/format';
 import { ClaudePanel } from '../../shared/claude-panel';
+import { JevReview } from '../../shared/jev-review';
 
 const KIND_LABELS: Record<DraftKind, string> = { image: 'Post estático', carousel: 'Carrossel', reel: 'Reels', story: 'Story' };
 const STATUS: { value: DraftStatus; label: string }[] = [
@@ -22,7 +23,7 @@ const ARTIFACTS_BY_KIND: Record<DraftKind, Artifact[]> = {
 @Component({
   selector: 'app-drafts',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ClaudePanel],
+  imports: [ClaudePanel, JevReview],
   template: `
     <div class="layout">
       <section class="card list">
@@ -101,6 +102,8 @@ const ARTIFACTS_BY_KIND: Record<DraftKind, Artifact[]> = {
 
           <app-claude-panel [accountId]="id()" [draftId]="d.id" [currentText]="body()"
                             [artifacts]="artifactsFor(d.kind)" (use)="useClaude($event)" />
+          <app-jev-review [accountId]="id()" [caption]="body()" [kind]="d.kind" [offerTags]="true"
+                          (tags)="patch({ hook: $event.hook ?? d.hook, style: $event.style ?? d.style })" />
         } @else {
           <div class="empty">
             <p><strong>Escolha um rascunho</strong> ou crie um novo.</p>
