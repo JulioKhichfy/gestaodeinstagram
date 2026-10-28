@@ -1,0 +1,23 @@
+# Só o código vai para o Git. Tudo o mais na raiz (pastas de contas de clientes, claude.md com
+# contexto local, anotações) fica de fora por padrão.
+/*
+!/.gitignore
+!/README.md
+!/dashboard/
+
+# Dados de clientes e segredos dentro do dashboard
+dashboard/backend/accounts.json
+dashboard/backend/.env
+dashboard/backend/data/
+dashboard/backend/media/
+.env
+*.key
+
+# Gerados
+node_modules/
+dist/
+.angular/
+coverage/
+*.log
+.DS_Store
+Thumbs.db

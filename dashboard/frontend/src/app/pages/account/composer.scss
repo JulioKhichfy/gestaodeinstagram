@@ -1,0 +1,51 @@
+.composer { display: grid; gap: 16px; }
+h2 { margin: 0; font-size: 1.1rem; }
+.small { font-size: .82rem; margin: 0; }
+
+.segmented {
+  display: inline-flex; background: var(--surface-2); border-radius: 10px; padding: 4px; gap: 4px;
+  justify-self: start; flex-wrap: wrap;
+  button {
+    border: 0; background: transparent; padding: 8px 16px; border-radius: 8px; font: inherit;
+    color: var(--muted); cursor: pointer;
+    &.active { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: var(--shadow); }
+  }
+}
+
+.media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+
+.thumb {
+  margin: 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--surface-2);
+  img, video { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; background: #000; }
+  figcaption { display: flex; align-items: center; gap: 4px; padding: 6px; }
+  .badge { font-weight: 600; font-size: .8rem; margin-right: auto; }
+  .danger { margin-left: auto; }
+}
+.warn-text { color: var(--warn-text); font-size: .75rem; margin: 0; padding: 0 8px 8px; }
+
+.icon {
+  border: 1px solid var(--border); background: var(--surface); border-radius: 6px; width: 28px; height: 28px;
+  cursor: pointer; font-size: 1rem; line-height: 1;
+  &:disabled { opacity: .4; cursor: default; }
+}
+
+.add-tile {
+  display: grid; place-content: center; justify-items: center; gap: 6px; min-height: 180px;
+  border: 2px dashed var(--border-strong); border-radius: 10px; color: var(--muted); cursor: pointer;
+  background: transparent; font: inherit; text-align: center; padding: 8px;
+  &:hover:not(:disabled):not(.disabled) { border-color: var(--accent); color: var(--accent); }
+  &:disabled, &.disabled { opacity: .5; cursor: default; }
+  .plus { font-size: 1.6rem; font-weight: 600; }
+}
+
+.subcard { border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: var(--surface-2); }
+
+.reel-options { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
+.cover { display: flex; align-items: center; gap: 12px;
+  img { width: 60px; aspect-ratio: 9 / 16; object-fit: cover; border-radius: 6px; } }
+
+.counters { color: var(--muted); text-align: right; margin-top: -8px;
+  &.over { color: var(--error-text); font-weight: 600; } }
+
+.actions { display: flex; justify-content: flex-end; gap: 12px; }
+.audio { min-width: 220px; flex: 1; }

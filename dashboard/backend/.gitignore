@@ -1,0 +1,6 @@
+node_modules/
+.env
+data/
+media/
+# Contas dos clientes (dados reais): cada instalação cria o seu a partir de accounts.example.json
+/accounts.json

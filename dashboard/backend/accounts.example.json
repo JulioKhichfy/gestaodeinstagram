@@ -1,0 +1,19 @@
+[
+  {
+    "id": "minha-loja",
+    "label": "Minha loja",
+    "username": "minha.loja",
+    "folder": "dashboard/exemplo-conta",
+    "business": "loja"
+  },
+  {
+    "id": "meus-servicos",
+    "label": "Meus serviços",
+    "username": "meus.servicos",
+    "folder": "dashboard/exemplo-conta",
+    "business": "servicos",
+    "ads": {
+      "audience": "Opcional: sobrepõe a recomendação padrão do tipo de negócio (objective, audience, budget, tip)."
+    }
+  }
+]

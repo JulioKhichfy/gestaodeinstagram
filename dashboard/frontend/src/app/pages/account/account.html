@@ -1,0 +1,88 @@
+@if (account(); as acc) {
+  @if (banner(); as b) {
+    <p class="alert" [class.ok]="b.kind === 'ok'" [class.error]="b.kind === 'error'" [class.info]="b.kind === 'info'">
+      {{ b.text }}
+      <button type="button" class="close" (click)="banner.set(null)" aria-label="Fechar">✕</button>
+    </p>
+  }
+
+  @if (acc.connected && !acc.hasInsights) {
+    <p class="alert warn">
+      <strong>Reconecte esta conta</strong> para liberar relatórios: a versão 2 precisa da permissão de métricas
+      (<code>instagram_business_manage_insights</code>), que não foi pedida na primeira conexão.
+      <button type="button" class="btn ghost" [disabled]="connecting()" (click)="connect()">Reconectar agora</button>
+    </p>
+  }
+
+  <section class="card profile">
+    @if (overview()?.profile; as p) {
+      @if (p.profile_picture_url) {
+        <img class="avatar" [src]="p.profile_picture_url" alt="" />
+      } @else {
+        <span class="avatar placeholder"></span>
+      }
+      <div class="info">
+        <h1>&#64;{{ p.username }}</h1>
+        @if (p.name) { <p class="muted">{{ p.name }}</p> }
+        <ul class="stats">
+          <li><strong>{{ p.media_count | number }}</strong> posts</li>
+          <li><strong>{{ p.followers_count | number }}</strong> seguidores</li>
+          <li><strong>{{ p.follows_count | number }}</strong> seguindo</li>
+        </ul>
+      </div>
+    } @else {
+      <span class="avatar placeholder"></span>
+      <div class="info">
+        <h1>&#64;{{ acc.username }}</h1>
+        <p class="muted">
+          @if (loading()) {
+            Carregando perfil…
+          } @else if (!acc.connected) {
+            @if (acc.tokenExpiresAt) { A conexão expirou. Conecte de novo. } @else { Ainda não conectada ao dashboard. }
+          }
+        </p>
+      </div>
+    }
+
+    <div class="side">
+      @if (acc.connected) {
+        <span class="pill ok">Conectada</span>
+        @if (tokenDaysLeft() !== null) {
+          <small class="muted" title="O backend renova automaticamente enquanto estiver rodando">
+            Acesso válido por {{ tokenDaysLeft() }} dias (renovação automática)
+          </small>
+        }
+        @if (overview()?.limit; as l) {
+          <small class="muted">Publicações via API nas últimas 24h: {{ l.used }}/{{ l.total }}</small>
+        }
+        <small class="muted">
+          @if (acc.syncing) {
+            <span class="spinner inline"></span> Sincronizando…
+          } @else {
+            Última sincronização: {{ dateTime(lastSync()?.lastSuccessAt ?? null) }}
+          }
+        </small>
+        <div class="buttons">
+          <button type="button" class="btn ghost" [disabled]="acc.syncing" (click)="sync()">Sincronizar</button>
+          <button type="button" class="btn ghost" [disabled]="connecting()" (click)="connect()">Reconectar</button>
+          <button type="button" class="btn ghost danger" (click)="disconnect()">Desconectar</button>
+        </div>
+      } @else {
+        <button type="button" class="btn primary" [disabled]="connecting()" (click)="connect()">
+          {{ connecting() ? 'Abrindo Instagram…' : 'Conectar Instagram' }}
+        </button>
+        <small class="muted">Você fará login na tela oficial do Instagram como &#64;{{ acc.username }}.</small>
+      }
+    </div>
+  </section>
+
+  <nav class="subnav" aria-label="Seções da conta">
+    @for (s of sections; track s.path) {
+      <a [routerLink]="s.path" routerLinkActive="active">{{ s.label }}</a>
+    }
+  </nav>
+
+  <router-outlet />
+} @else {
+  <p class="muted">Conta não encontrada.</p>
+}

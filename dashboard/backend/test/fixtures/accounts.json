@@ -1,0 +1,30 @@
+[
+  {
+    "id": "autora",
+    "label": "Autora",
+    "username": "autora.exemplo",
+    "folder": "dashboard/backend/test/fixtures/contas/autora",
+    "business": "livros"
+  },
+  {
+    "id": "cursos",
+    "label": "Cursos",
+    "username": "cursos.exemplo",
+    "folder": "dashboard/backend/test/fixtures/contas/cursos",
+    "business": "servicos"
+  },
+  {
+    "id": "loja",
+    "label": "Loja",
+    "username": "loja.exemplo",
+    "folder": "dashboard/backend/test/fixtures/contas/loja",
+    "business": "loja"
+  },
+  {
+    "id": "projetos",
+    "label": "Projetos",
+    "username": "projetos.exemplo",
+    "folder": "dashboard/backend/test/fixtures/contas/projetos",
+    "business": "servicos"
+  }
+]

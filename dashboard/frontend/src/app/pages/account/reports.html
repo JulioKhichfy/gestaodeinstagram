@@ -1,0 +1,193 @@
+<div class="toolbar">
+  <div class="segmented" role="tablist">
+    <button type="button" role="tab" [class.active]="tab() === 'estrategico'" (click)="tab.set('estrategico')">Estratégico</button>
+    <button type="button" role="tab" [class.active]="tab() === 'operacional'" (click)="tab.set('operacional')">Operacional</button>
+  </div>
+  <div class="segmented" aria-label="Período">
+    @for (p of periods; track p) {
+      <button type="button" [class.active]="days() === p" (click)="days.set(p)">{{ p }} dias</button>
+    }
+  </div>
+  <button type="button" class="btn ghost" (click)="exportCsv()">Exportar CSV</button>
+</div>
+
+@if (error()) { <p class="alert error">{{ error() }}</p> }
+@if (loading() && !report()) { <p class="muted">Carregando relatório…</p> }
+
+@if (report(); as r) {
+  @if (!hasData()) {
+    <div class="card empty-state">
+      <p><strong>Ainda não há dados desta conta.</strong></p>
+      @if (!account()?.connected) {
+        <p class="muted">Conecte a conta no topo da página para começar a coletar métricas.</p>
+      } @else if (!account()?.hasInsights) {
+        <p class="muted">Reconecte a conta (botão no topo) para liberar a permissão de métricas.</p>
+      } @else {
+        <p class="muted">A primeira sincronização busca até 1 ano de posts e 28 dias de métricas diárias.</p>
+        <button type="button" class="btn primary" (click)="sync()">Sincronizar agora</button>
+      }
+    </div>
+  }
+
+  @if (tab() === 'estrategico') {
+    <section class="kpis">
+      <app-kpi label="Alcance (soma diária)" [value]="fmt.compact(r.kpis.reach)" [current]="r.kpis.reach" [previous]="r.prevKpis.reach"
+               hint="Soma do alcance de cada dia do período (uma pessoa pode contar em mais de um dia)." />
+      <app-kpi label="Interações" [value]="fmt.compact(r.kpis.interactions)" [current]="r.kpis.interactions" [previous]="r.prevKpis.interactions" />
+      <app-kpi label="Seguidores" [value]="fmt.num(r.kpis.followers)"
+               [note]="r.kpis.followersDelta !== null ? (r.kpis.followersDelta >= 0 ? '+' : '') + fmt.num(r.kpis.followersDelta) + ' no período' : 'crescimento aparece após alguns dias de sincronização'" />
+      <app-kpi label="Score médio dos posts" [value]="fmt.dec(r.kpis.avgScore)" [current]="r.kpis.avgScore" [previous]="r.prevKpis.avgScore"
+               hint="Sinais ponderados (compartilhar > salvar > comentar > curtir > visitar perfil) por 100 contas alcançadas." />
+      <app-kpi label="Engajamento médio" [value]="fmt.pct(r.kpis.avgEngagement)" [current]="r.kpis.avgEngagement" [previous]="r.prevKpis.avgEngagement"
+               hint="Interações ÷ alcance de cada post." />
+      <app-kpi label="Posts no período" [value]="fmt.num(r.kpis.posts)" [current]="r.kpis.posts" [previous]="r.prevKpis.posts" />
+      <app-kpi label="Compartilhamentos" [value]="fmt.num(r.kpis.shares)" [current]="r.kpis.shares" [previous]="r.prevKpis.shares" />
+      <app-kpi label="Salvamentos" [value]="fmt.num(r.kpis.saves)" [current]="r.kpis.saves" [previous]="r.prevKpis.saves" />
+    </section>
+
+    @if (insights().length) {
+      <section class="card">
+        <h2>Leituras automáticas</h2>
+        <ul class="insights">@for (i of insights(); track $index) { <li>{{ i }}</li> }</ul>
+      </section>
+    }
+
+    <section class="grid-2">
+      <div class="card"><app-chart title="Alcance por dia" [option]="reachChart()" [table]="reachTable()" [empty]="!r.daily.length" /></div>
+      <div class="card"><app-chart title="Seguidores" subtitle="Registrado a cada sincronização" [option]="followersChart()" [empty]="!r.kpis.followers" /></div>
+    </section>
+
+    <section class="card">
+      <app-chart title="Sinais de engajamento por semana"
+                 subtitle="A conta está ganhando compartilhamentos e salvamentos (sinais fortes) ou só curtidas?"
+                 height="300px" [option]="signalsChart()" [table]="signalsTable()" [empty]="!r.signalsByWeek.length" />
+    </section>
+
+    <section class="grid-2">
+      <div class="card"><app-chart title="Score médio por formato" subtitle="Últimos 90 dias (mín.)" [option]="formatChart()" [table]="formatTable()" [empty]="!r.byFormat.length" /></div>
+      <div class="card"><app-chart title="Score médio por dia da semana" subtitle="Dia em que o post foi publicado" [option]="weekdayChart()" [table]="weekdayTable()" [empty]="!r.byFormat.length" /></div>
+    </section>
+
+    <section class="card">
+      <app-chart title="Quando seus seguidores estão online" subtitle="Média por hora, segundo o Instagram" [option]="onlineChart()"
+                 [empty]="!hasOnline()" emptyText="Disponível para contas com 100+ seguidores, após a primeira sincronização." />
+    </section>
+
+    <section class="grid-2">
+      <div class="card">
+        <h2>Melhores posts</h2>
+        <ol class="post-list">
+          @for (p of r.topPosts; track p.id) {
+            <li>
+              @if (p.thumbnail) { <img [src]="p.thumbnail" alt="" loading="lazy" /> }
+              <div>
+                <a [href]="p.permalink" target="_blank" rel="noopener">{{ p.formatLabel }} · {{ fmt.dateBR(p.timestamp) }}</a>
+                <small class="muted">Score {{ fmt.dec(p.score) }} · alcance {{ fmt.num(p.reach) }} · {{ fmt.num(p.shares) }} compart. · {{ fmt.num(p.saved) }} salv.</small>
+                <small class="caption">{{ p.caption }}</small>
+              </div>
+            </li>
+          } @empty { <li class="muted">Sem posts com métricas no período.</li> }
+        </ol>
+      </div>
+      <div class="card">
+        <h2>Posts com menor desempenho</h2>
+        <ol class="post-list">
+          @for (p of r.bottomPosts; track p.id) {
+            <li>
+              @if (p.thumbnail) { <img [src]="p.thumbnail" alt="" loading="lazy" /> }
+              <div>
+                <a [href]="p.permalink" target="_blank" rel="noopener">{{ p.formatLabel }} · {{ fmt.dateBR(p.timestamp) }}</a>
+                <small class="muted">Score {{ fmt.dec(p.score) }} · alcance {{ fmt.num(p.reach) }}</small>
+                <small class="caption">{{ p.caption }}</small>
+              </div>
+            </li>
+          } @empty { <li class="muted">Sem posts com métricas no período.</li> }
+        </ol>
+      </div>
+    </section>
+
+    <section class="grid-2">
+      <div class="card">
+        <app-chart title="Idade dos seguidores" [option]="ageChart()" [empty]="!demographics().age.length"
+                   emptyText="A Meta só mostra o público de contas com 100+ seguidores." />
+        @if (demographics().gender.length) {
+          <p class="muted small">@for (g of demographics().gender; track g.label) { {{ g.label }}: {{ fmt.pct(g.pct) }}&nbsp;&nbsp; }</p>
+        }
+      </div>
+      <div class="card">
+        <h2>Principais cidades</h2>
+        <table class="data">
+          <thead><tr><th>Seguidores</th><th class="num">Qtd.</th><th>Quem engajou</th><th class="num">Qtd.</th></tr></thead>
+          <tbody>
+            @for (c of demographics().cities; track c.key; let i = $index) {
+              <tr>
+                <td>{{ c.key }}</td><td class="num">{{ fmt.num(c.value) }}</td>
+                <td>{{ demographics().engagedCities[i]?.key ?? '' }}</td>
+                <td class="num">{{ demographics().engagedCities[i] ? fmt.num(demographics().engagedCities[i].value) : '' }}</td>
+              </tr>
+            } @empty { <tr><td colspan="4" class="muted">Sem dados de público ainda.</td></tr> }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Analisar com o Claude</h2>
+      <p class="muted small">O Claude recebe o resumo deste relatório e devolve conclusões, ações para os próximos 10 dias e um experimento.</p>
+      <app-claude-panel [accountId]="id()" [currentText]="summary()" [artifacts]="['analise', 'ideias', 'livre']" />
+    </section>
+  } @else {
+    <section class="kpis">
+      <app-kpi label="Dias sem postar" [value]="fmt.num(r.operational.daysSinceLastPost)"
+               [note]="r.operational.lastPostAt ? 'Último post: ' + fmt.dateBR(r.operational.lastPostAt) : ''" />
+      <app-kpi label="Posts por semana" [value]="fmt.dec(r.operational.postsPerWeek)" note="Média das últimas 4 semanas" />
+      <app-kpi label="Acesso ao Instagram" [value]="r.operational.tokenDaysLeft !== null ? r.operational.tokenDaysLeft + ' dias' : '—'" note="Renovado automaticamente" />
+      <app-kpi label="Última sincronização" [value]="fmt.dateTimeBR(r.operational.lastSyncAt)" [note]="r.operational.syncError ? 'Com erro (veja abaixo)' : 'OK'" />
+    </section>
+
+    <section class="card">
+      <h2>Alertas</h2>
+      @for (a of r.operational.alerts; track a.code) {
+        <p class="alert" [class.error]="a.level === 'error'" [class.warn]="a.level === 'warn'" [class.info]="a.level === 'info'">
+          <strong>{{ a.level === 'error' ? 'Atenção' : a.level === 'warn' ? 'Aviso' : 'Info' }}:</strong> {{ a.text }}
+        </p>
+      } @empty {
+        <p class="alert ok">Tudo em dia nesta conta.</p>
+      }
+      <p class="muted small">Limites dos alertas em <a routerLink="/configuracoes">Configurações</a>.</p>
+    </section>
+
+    <section class="card">
+      <h2>Histórico de publicações pelo dashboard</h2>
+      <div class="table-scroll">
+        <table class="data">
+          <thead><tr><th>Quando</th><th>Tipo</th><th>Resultado</th><th>Legenda</th></tr></thead>
+          <tbody>
+            @for (l of r.operational.publishLog ?? []; track l.id) {
+              <tr>
+                <td>{{ fmt.dateTimeBR(l.created_at) }}</td>
+                <td>{{ l.type === 'image' ? 'Post' : l.type === 'carousel' ? 'Carrossel' : 'Reels' }}{{ l.trial ? ' (trial)' : '' }}</td>
+                <td>
+                  @if (l.ok) {
+                    <span class="pill ok">Publicado</span>
+                    @if (l.permalink) { <a [href]="l.permalink" target="_blank" rel="noopener">ver</a> }
+                  } @else {
+                    <span class="pill err" [title]="l.error ?? ''">Falhou</span> <small class="muted">{{ l.error }}</small>
+                  }
+                </td>
+                <td class="caption-cell">{{ l.caption }}</td>
+              </tr>
+            } @empty { <tr><td colspan="4" class="muted">Nada publicado pelo dashboard ainda.</td></tr> }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    @if (r.operational.syncError) {
+      <section class="card">
+        <h2>Erro da última sincronização</h2>
+        <p class="alert error">{{ r.operational.syncError }}</p>
+      </section>
+    }
+  }
+}
