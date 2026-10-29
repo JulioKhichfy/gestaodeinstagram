@@ -22,6 +22,7 @@ export const ARTIFACTS = {
   melhorar: 'Melhore o texto atual mantendo a voz da marca: gancho mais forte, mais clareza, CTA melhor. Se for uma legenda, deixe com no máximo 1.500 caracteres. Devolva só a versão final.',
   analise: 'Analise os dados de desempenho do "texto atual" e entregue: 3 conclusões objetivas, 3 ações concretas para os próximos 10 dias e 1 experimento (formato + gancho) para testar, com a métrica que vai dizer se funcionou.',
   trafego: 'Sugira como impulsionar este conteúdo: objetivo da campanha, público (idade, local, interesses), orçamento diário inicial e duração para um teste, e como medir se deu certo.',
+  resposta: 'Escreva uma resposta curta (até 300 caracteres) e calorosa ao comentário de uma pessoa interessada, no tom da conta. Responda à dúvida se o perfil da conta tiver a informação; se não tiver, convide para continuar no direct ou no link da bio. Não invente preço, prazo nem promessa. Devolva só a resposta, sem aspas.',
   livre: 'Responda ao pedido da usuária.',
 } as const;
 export type Artifact = keyof typeof ARTIFACTS;

@@ -29,6 +29,7 @@ export const routes: Routes = [
           { path: 'ciclos', loadComponent: () => import('./pages/account/cycles').then((m) => m.CyclesPage) },
           { path: 'trafego', loadComponent: () => import('./pages/account/ads').then((m) => m.AdsPage) },
           { path: 'descoberta', loadComponent: () => import('./pages/account/discovery').then((m) => m.DiscoveryPage) },
+          { path: 'clientes', loadComponent: () => import('./pages/account/leads').then((m) => m.LeadsPage) },
         ],
       },
       { path: '', pathMatch: 'full', redirectTo: 'visao-geral' },

@@ -303,6 +303,44 @@ export const HELP: HelpSection[] = [
     ],
   },
   {
+    id: 'clientes',
+    title: 'Captar clientes',
+    intro:
+      'A aba "Captar clientes" junta, dos comentários dos seus posts, quem quer comprar ou contratar. Responder rápido é o que mais converte: quem pergunta o preço e não tem resposta compra de outra pessoa.',
+    items: [
+      {
+        q: 'Como o dashboard separa os interessados?',
+        a: [
+          '- Lê os comentários dos posts dos últimos 60 dias (sozinho a cada 6 h, ou no botão "Buscar comentários agora").',
+          '- Uma regra de palavras pega o óbvio: "quanto custa", "orçamento", "como compro", "parcela", "me chama no direct"…',
+          '- O Jev lê cada comentário com o perfil do negócio (claude.md) e diz a intenção (comprar, dúvida, elogio, crítica, spam), a chance de interesse e se é urgente.',
+          'Elogios e spam não entram na lista (estão em "Todos os comentários"). Os urgentes e sem resposta aparecem primeiro.',
+        ],
+      },
+      {
+        q: 'Como responder?',
+        a: [
+          '- "Responder" abre o campo; "Sugerir com o Claude" escreve uma resposta curta no tom da conta, que você edita.',
+          '- "Responder no Instagram" publica a resposta no comentário (pede confirmação). O interessado vai para "Em conversa".',
+          '- "Abrir direct" abre a conversa com a pessoa no Instagram; a mensagem é escrita e enviada por você.',
+          'O dashboard nunca manda mensagem, segue ou curte sozinho: isso viola as regras da Meta e pode bloquear a conta.',
+        ],
+      },
+      {
+        q: 'Como medir o resultado?',
+        a: [
+          'Mude o status de cada interessado (Novo › Em conversa › Cliente ou Descartado) e registre o valor fechado. O topo mostra interessados, sem resposta, clientes, valor e conversão dos últimos 30 dias, e a tabela mostra quais posts mais trazem clientes: faça mais parecidos e impulsione esses.',
+        ],
+      },
+      {
+        q: 'Aparece "Falta uma permissão"',
+        a: [
+          'Ler e responder comentários exige a permissão de comentários da Meta, que as conexões antigas não têm. Na página da conta, clique em "Conectar pelo Facebook" (ou Reconectar) e aceite tudo. Se a Página estiver num Gerenciador de Negócios, a Meta pode pedir também a permissão de anúncios (ads_read).',
+        ],
+      },
+    ],
+  },
+  {
     id: 'gerar',
     title: 'Gerar posts com Claude + Jev',
     intro:

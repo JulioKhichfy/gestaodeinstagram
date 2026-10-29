@@ -17,6 +17,7 @@ export const ARTIFACT_LABELS: Record<Artifact, string> = {
   melhorar: 'Melhorar texto',
   analise: 'Analisar resultados',
   trafego: 'Impulsionamento',
+  resposta: 'Resposta a comentário',
   livre: 'Pedido livre',
 };
 
@@ -33,6 +34,7 @@ export const ARTIFACT_HELP: Record<Artifact, string> = {
   melhorar: 'Reescreve o texto que já está no campo (escreva algo antes). Detalhes opcionais: "mais curto", "mais divertido"…',
   analise: 'Lê os números do relatório e sugere conclusões, ações e um experimento.',
   trafego: 'Sugere objetivo, público, orçamento e duração para impulsionar o post.',
+  resposta: 'Resposta curta e simpática a um comentário de quem quer comprar ou contratar.',
   livre: 'Peça o que quiser em poucas palavras. Ex.: "deixe mais curto", "tom mais acolhedor", "3 versões da chamada final".',
 };
 

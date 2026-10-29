@@ -1,8 +1,10 @@
 // Sincronização Instagram -> SQLite. Idempotente (sempre UPSERT): pode rodar quantas vezes quiser.
 // Uma conta com erro é registrada em account_sync e não interrompe as outras.
-import { ACCOUNTS } from './config.ts';
+import { ACCOUNTS, findAccount } from './config.ts';
 import { db, getSetting, setSetting, transaction } from './db.ts';
 import * as ig from './instagram.ts';
+import { jevClient, jevConfigured } from './jev.ts';
+import { classifyComments, commentsApi, hasCommentsPermission, syncComments } from './leads.ts';
 import { connectionAuth, read } from './store.ts';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -40,6 +42,14 @@ export async function syncAccount(accountId: string): Promise<{ ok: boolean; err
     await syncMedia(accountId, conn.igUserId, auth, problems);
     await syncAccountDays(accountId, conn.igUserId, auth, problems);
     await syncAudience(accountId, conn.igUserId, auth, problems);
+    if (hasCommentsPermission(conn.permissions)) {
+      try {
+        await syncComments(db, commentsApi, accountId, auth, conn.username);
+        await classifyComments(db, jevConfigured() ? jevClient : null, findAccount(accountId)!);
+      } catch (e) {
+        problems.push(`Comentários: ${(e as Error).message}`);
+      }
+    }
   } catch (e) {
     problems.unshift((e as Error).message);
   } finally {

@@ -212,6 +212,31 @@ const MIGRATIONS: string[] = [
   ALTER TABLE drafts ADD COLUMN media TEXT NOT NULL DEFAULT '[]';  -- [StockItem] com selected
   ALTER TABLE drafts ADD COLUMN jev_grade INTEGER;
   `,
+  // Captar clientes: comentários dos posts, classificados pelo Jev, viram uma lista de clientes em potencial.
+  `
+  CREATE TABLE comments (
+    id TEXT PRIMARY KEY,
+    account_id TEXT NOT NULL,
+    media_id TEXT NOT NULL,
+    username TEXT,
+    text TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    like_count INTEGER,
+    replied_at TEXT,                 -- quando a conta respondeu (Instagram ou dashboard)
+    reply_text TEXT,
+    intent TEXT,                     -- compra | duvida | elogio | critica | spam | outro (Jev)
+    intent_confidence REAL,
+    interest REAL,                   -- 0 a 1: interesse em comprar/contratar (Jev)
+    urgent REAL,                     -- 0 a 1: pede resposta rápida (Jev)
+    classified_at INTEGER,
+    status TEXT NOT NULL DEFAULT 'novo',  -- novo | em_conversa | cliente | descartado
+    notes TEXT NOT NULL DEFAULT '',
+    deal_value REAL,                 -- valor fechado (R$), quando vira cliente
+    status_at INTEGER,
+    synced_at INTEGER NOT NULL
+  );
+  CREATE INDEX comments_account_ts ON comments(account_id, timestamp);
+  `,
 ];
 
 export function openDb(file: string): DatabaseSync {

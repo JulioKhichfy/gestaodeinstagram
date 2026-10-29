@@ -32,6 +32,7 @@ export class AccountPage {
     { path: 'posts', label: 'Posts e experimentos', help: 'Todos os posts com métricas; registre gancho e estilo para descobrir o que funciona' },
     { path: 'ciclos', label: 'Ciclos de 10 dias', help: 'Método de pesquisa, testes e análise em 10 dias' },
     { path: 'trafego', label: 'Tráfego pago', help: 'Quais posts impulsionar, com que público e orçamento' },
+    { path: 'clientes', label: 'Captar clientes', help: 'Quem comentou querendo comprar ou contratar: responda rápido e acompanhe até virar cliente' },
     { path: 'descoberta', label: 'Descoberta', help: 'Encontre perfis do nicho, referências e concorrentes' },
   ];
 

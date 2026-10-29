@@ -310,7 +310,51 @@ export interface ClaudeMessage {
 }
 
 export type Artifact =
-  | 'legenda' | 'roteiro' | 'carrossel' | 'card' | 'ganchos' | 'hashtags' | 'som' | 'ideias' | 'melhorar' | 'analise' | 'trafego' | 'livre';
+  | 'legenda' | 'roteiro' | 'carrossel' | 'card' | 'ganchos' | 'hashtags' | 'som' | 'ideias' | 'melhorar' | 'analise' | 'trafego' | 'resposta' | 'livre';
+
+// ---------- Captar clientes ----------
+
+export type LeadStatus = 'novo' | 'em_conversa' | 'cliente' | 'descartado';
+
+export interface Lead {
+  id: string;
+  username: string | null;
+  text: string;
+  timestamp: string;
+  likeCount: number | null;
+  intent: string | null;
+  intentLabel: string | null;
+  intentConfidence: number | null;
+  interest: number | null;
+  urgent: number | null;
+  status: LeadStatus;
+  notes: string;
+  dealValue: number | null;
+  repliedAt: string | null;
+  replyText: string | null;
+  media: { id: string; permalink: string | null; thumbnail: string | null; caption: string };
+}
+
+export interface LeadStats {
+  days: number;
+  comments: number;
+  leads: number;
+  pending: number;
+  novo: number;
+  emConversa: number;
+  clientes: number;
+  descartados: number;
+  valor: number;
+  conversao: number | null;
+  topPosts: { mediaId: string; permalink: string | null; thumbnail: string | null; caption: string; leads: number; clients: number }[];
+}
+
+export interface LeadsStatus {
+  connected: boolean;
+  hasPermission: boolean;
+  via: 'instagram' | 'facebook' | null;
+  jev: boolean;
+}
 
 export interface AdPlan {
   id: number;
@@ -674,6 +718,30 @@ export class Api {
 
   trackStock(url: string) {
     return firstValueFrom(this.http.post<void>('/api/stock/track', { url }));
+  }
+
+  leadsStatus(id: string) {
+    return firstValueFrom(this.http.get<LeadsStatus>(`/api/accounts/${id}/leads/status`));
+  }
+  leads(id: string, status: LeadStatus | 'todos') {
+    return firstValueFrom(this.http.get<Lead[]>(`/api/accounts/${id}/leads`, { params: { status } }));
+  }
+  leadStats(id: string, days: number) {
+    return firstValueFrom(this.http.get<LeadStats>(`/api/accounts/${id}/leads/stats`, { params: { days } }));
+  }
+  refreshLeads(id: string) {
+    return firstValueFrom(
+      this.http.post<{ posts: number; fetched: number; added: number; classified: number; failed: number }>(`/api/accounts/${id}/leads/refresh`, {}),
+    );
+  }
+  updateLead(commentId: string, body: Partial<{ status: LeadStatus; notes: string; dealValue: number | null }>) {
+    return firstValueFrom(this.http.patch<Lead>(`/api/leads/${commentId}`, body));
+  }
+  suggestReply(commentId: string, instruction = '') {
+    return firstValueFrom(this.http.post<{ text: string }>(`/api/leads/${commentId}/suggest`, { instruction }));
+  }
+  replyLead(commentId: string, message: string) {
+    return firstValueFrom(this.http.post<Lead>(`/api/leads/${commentId}/reply`, { message }));
   }
 
   jevStatus() {

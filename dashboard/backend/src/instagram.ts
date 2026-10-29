@@ -53,7 +53,9 @@ export const withToken = (url: string, token: string) =>
   `${url}${url.includes('?') ? '&' : '?'}access_token=${encodeURIComponent(token)}`;
 
 export const INSIGHTS_SCOPE = 'instagram_business_manage_insights';
-export const SCOPES = ['instagram_business_basic', 'instagram_business_content_publish', INSIGHTS_SCOPE];
+/** Ler e responder comentários (Captar clientes): um nome em cada login. */
+export const COMMENTS_SCOPES = ['instagram_business_manage_comments', 'instagram_manage_comments'];
+export const SCOPES = ['instagram_business_basic', 'instagram_business_content_publish', INSIGHTS_SCOPE, COMMENTS_SCOPES[0]];
 
 export function authorizeUrl(state: string): string {
   const q = new URLSearchParams({
@@ -286,6 +288,36 @@ export async function getOnlineFollowers(igUserId: string, auth: Auth): Promise<
   if (!days.length) return hours;
   for (const day of days) for (const [h, n] of Object.entries(day)) hours[Number(h)] += n;
   return hours.map((n) => Math.round(n / days.length));
+}
+
+// ---------- Comentários (Captar clientes) ----------
+
+export interface IgComment {
+  id: string;
+  text?: string;
+  timestamp: string;
+  /** Exige a permissão de comentários (regra da Meta desde ago/2024). */
+  username?: string;
+  like_count?: number;
+  replies?: { data: IgComment[] };
+}
+
+/** Comentários de um post, com as respostas, até `max`. Só funciona em posts da própria conta. */
+export async function getComments(auth: Auth, mediaId: string, max = 200): Promise<IgComment[]> {
+  const fields = 'id,text,timestamp,username,like_count,replies{id,text,timestamp,username}';
+  const out: IgComment[] = [];
+  let url: string | undefined = withToken(`${graph(auth, `${mediaId}/comments`)}?${new URLSearchParams({ fields, limit: '50' })}`, auth.token);
+  while (url && out.length < max) {
+    const page: { data: IgComment[]; paging?: { next?: string } } = await call(url);
+    out.push(...page.data);
+    url = page.paging?.next;
+  }
+  return out.slice(0, max);
+}
+
+/** Responde publicamente a um comentário (aparece como resposta da conta). */
+export function replyToComment(auth: Auth, commentId: string, message: string): Promise<{ id: string }> {
+  return call<{ id: string }>(graph(auth, `${commentId}/replies`), form({ message, access_token: auth.token }));
 }
 
 // ---------- Publicação ----------
