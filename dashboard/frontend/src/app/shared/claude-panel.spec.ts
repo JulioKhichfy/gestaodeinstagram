@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Api } from '../core/api';
-import { ClaudePanel } from './claude-panel';
+import { ClaudePanel, applyClaudeText, listOptions, onlyHashtags } from './claude-panel';
 
 describe('ClaudePanel', () => {
   const askClaude = vi.fn();
@@ -50,5 +50,41 @@ describe('ClaudePanel', () => {
     await fixture.componentInstance.ask();
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Claude Code não está logado.');
+  });
+
+  it('ganchos: cada opção troca só a 1ª linha', async () => {
+    askClaude.mockResolvedValue({ text: '1. Você sabia?\n2. "Pare de errar nisso"\n3. 5 dicas rápidas' });
+    const fixture = setup({ artifacts: ['ganchos'] });
+    const used: unknown[] = [];
+    fixture.componentInstance.use.subscribe((v) => used.push(v));
+    await fixture.componentInstance.ask();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const buttons = Array.from(el.querySelectorAll('button')).filter((b) => b.textContent?.includes('Usar como 1ª linha'));
+    expect(buttons.length).toBe(3);
+    expect(el.textContent).not.toContain('Usar este texto');
+    buttons[1].click();
+    expect(used).toEqual([{ text: 'Pare de errar nisso', mode: 'firstLine' }]);
+  });
+
+  it('avisa quando a legenda passa do limite e pede versão mais curta', async () => {
+    askClaude.mockResolvedValueOnce({ text: 'x'.repeat(2300) }).mockResolvedValueOnce({ text: 'curta' });
+    const fixture = setup({ artifacts: ['legenda'] });
+    await fixture.componentInstance.ask();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('passa do limite de 2200');
+    await fixture.componentInstance.shorten();
+    fixture.detectChanges();
+    expect(askClaude).toHaveBeenLastCalledWith(expect.objectContaining({ artifact: 'melhorar', currentText: 'x'.repeat(2300) }));
+    expect(el.textContent).not.toContain('passa do limite');
+  });
+
+  it('aplica a resposta no texto e extrai opções e hashtags', () => {
+    expect(applyClaudeText('Linha 1\nResto', { text: 'Novo gancho', mode: 'firstLine' })).toBe('Novo gancho\nResto');
+    expect(applyClaudeText('Texto', { text: '#a', mode: 'append' })).toBe('Texto\n\n#a');
+    expect(applyClaudeText('', { text: 'Novo', mode: 'firstLine' })).toBe('Novo');
+    expect(listOptions('Ideias:\n1) Um\n- Dois\ntexto solto')).toEqual(['Um', 'Dois']);
+    expect(onlyHashtags('#decoração #casa\nPalavras-chave: sala')).toBe('#decoração #casa');
   });
 });

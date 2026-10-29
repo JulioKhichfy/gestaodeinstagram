@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input, si
 import { Router } from '@angular/router';
 import { Api, Artifact, Draft, DraftKind, DraftStatus, StockItem, errorMessage } from '../../core/api';
 import { dateTimeBR } from '../../core/format';
-import { ClaudePanel } from '../../shared/claude-panel';
+import { ClaudePanel, ClaudeUse, applyClaudeText } from '../../shared/claude-panel';
 import { JevReview } from '../../shared/jev-review';
 import { PostGenerator } from './post-generator';
 
@@ -308,8 +308,8 @@ export class DraftsPage {
     if (this.selected() && this.body() !== this.selected()!.body) await this.patch({ body: this.body() });
   }
 
-  useClaude({ text, mode }: { text: string; mode: 'replace' | 'append' }): void {
-    this.body.update((b) => (mode === 'replace' || !b.trim() ? text : `${b.trimEnd()}\n\n${text}`));
+  useClaude(use: ClaudeUse): void {
+    this.body.update((b) => applyClaudeText(b, use));
     this.saveBody();
   }
 

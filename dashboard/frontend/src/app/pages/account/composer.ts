@@ -14,7 +14,7 @@ import {
   loadVideo,
   release,
 } from '../../core/media-files';
-import { ClaudePanel } from '../../shared/claude-panel';
+import { ClaudePanel, ClaudeUse, applyClaudeText } from '../../shared/claude-panel';
 import { TextCard } from './text-card';
 
 type Status = 'idle' | 'working' | 'done' | 'error';
@@ -282,8 +282,8 @@ export class Composer {
     }
   }
 
-  useClaude({ text, mode }: { text: string; mode: 'replace' | 'append' }): void {
-    this.caption.update((c) => (mode === 'replace' || !c.trim() ? text : `${c.trimEnd()}\n\n${text}`));
+  useClaude(use: ClaudeUse): void {
+    this.caption.update((c) => applyClaudeText(c, use));
   }
 
   async onFiles(event: Event): Promise<void> {

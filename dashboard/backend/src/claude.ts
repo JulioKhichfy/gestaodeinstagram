@@ -11,15 +11,15 @@ import { accountFolder, config, type AccountConfig } from './config.ts';
 import { listPosts } from './report.ts';
 
 export const ARTIFACTS = {
-  legenda: 'Escreva uma legenda completa: gancho forte na 1ª linha (aparece antes do "mais"), corpo de valor, chamada para ação clara no final e até 5 hashtags relevantes.',
+  legenda: 'Escreva uma legenda completa: gancho forte na 1ª linha (aparece antes do "mais"), corpo de valor, chamada para ação clara no final e até 5 hashtags relevantes. Tamanho: no máximo 1.500 caracteres no total.',
   roteiro: 'Escreva um roteiro de Reels de 15 a 45 segundos: GANCHO (0-3s, falado e em texto na tela), DESENVOLVIMENTO em cenas curtas com o que aparece na tela, e CTA final. Indique texto na tela e sugestão de B-roll por cena.',
   carrossel: 'Escreva o texto de um carrossel slide a slide (Slide 1 = capa com gancho; 5 a 10 slides; último = CTA). Frases curtas, uma ideia por slide.',
   card: 'Escreva o texto curto de um card estático (no máximo 25 palavras), impactante e legível no celular.',
-  ganchos: 'Proponha 10 ganchos diferentes (primeira frase/3 primeiros segundos) para este conteúdo, variando estilo: pergunta, número, contraste, erro comum, bastidor, promessa.',
-  hashtags: 'Sugira de 3 a 5 hashtags específicas do nicho e 5 palavras-chave para usar na legenda (o Instagram usa palavras-chave na busca). Explique em uma linha cada escolha.',
+  ganchos: 'Proponha 10 ganchos diferentes (primeira frase/3 primeiros segundos) para este conteúdo, variando estilo: pergunta, número, contraste, erro comum, bastidor, promessa. Formato: um gancho por linha, numerado ("1. ..."), com no máximo 125 caracteres cada, sem explicações.',
+  hashtags: 'Sugira de 3 a 5 hashtags específicas do nicho e 5 palavras-chave para usar no texto da legenda (o Instagram usa palavras-chave na busca). Formato: 1ª linha só com as hashtags separadas por espaço; depois "Palavras-chave:" com a lista; depois uma linha curta explicando cada escolha.',
   som: 'Sugira o estilo de áudio para este Reels (ritmo, clima, voz/narração ou música) e como sincronizar cortes. Lembre que a música precisa estar no próprio vídeo (a API não adiciona música da biblioteca); se fizer sentido, sugira publicar pelo app para usar um áudio em alta.',
   ideias: 'Gere 10 ideias de conteúdo para esta conta, cada uma com formato sugerido (Reels, carrossel ou post), gancho e objetivo (alcance, salvamento, compartilhamento ou venda).',
-  melhorar: 'Melhore o texto atual mantendo a voz da marca: gancho mais forte, mais clareza, CTA melhor. Devolva só a versão final.',
+  melhorar: 'Melhore o texto atual mantendo a voz da marca: gancho mais forte, mais clareza, CTA melhor. Se for uma legenda, deixe com no máximo 1.500 caracteres. Devolva só a versão final.',
   analise: 'Analise os dados de desempenho do "texto atual" e entregue: 3 conclusões objetivas, 3 ações concretas para os próximos 10 dias e 1 experimento (formato + gancho) para testar, com a métrica que vai dizer se funcionou.',
   trafego: 'Sugira como impulsionar este conteúdo: objetivo da campanha, público (idade, local, interesses), orçamento diário inicial e duração para um teste, e como medir se deu certo.',
   livre: 'Responda ao pedido da usuária.',
@@ -87,7 +87,8 @@ ${performanceContext(db, account.id)}
 - Entregue o conteúdo pronto para usar, sem introdução nem comentários sobre o que você fez.
 - Mantenha a voz e o público da conta. Não invente fatos, preços ou promessas que não estejam no perfil;
   quando faltar informação, use [colchetes] para a dona preencher.
-- Texto simples, sem markdown de títulos (#). Listas com hífen são permitidas.`;
+- Texto simples, sem markdown de títulos (#). Listas com hífen são permitidas.
+- Legenda do Instagram tem limite de 2.200 caracteres: nunca passe disso e prefira até 1.500.`;
 }
 
 export function buildUserPrompt(input: AskInput): string {
