@@ -1,8 +1,11 @@
 // Ponto de entrada: sobe o servidor e as tarefas periódicas.
-import { config, fbRedirectUri, missingConfig, publishMissing, redirectUri, setupMissing } from './config.ts';
+import { ACCOUNTS, config, fbRedirectUri, missingConfig, publishMissing, redirectUri, setupMissing } from './config.ts';
 import * as ig from './instagram.ts';
 import { app } from './server.ts';
 import { connectionToken, encrypt, read, write } from './store.ts';
+import { db } from './db.ts';
+import { jevClient, jevConfigured } from './jev.ts';
+import { refreshRadar } from './radar.ts';
 import { syncAll } from './sync.ts';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -31,6 +34,14 @@ async function refreshTokens(): Promise<void> {
   }
 }
 
+// Radar de assuntos: notícia quente envelhece rápido, então lê as fontes a cada 10 min (só contas com radar).
+const RADAR_EVERY = 10 * 60 * 1000;
+function radarTick(): void {
+  for (const a of ACCOUNTS.filter((x) => x.radar)) {
+    refreshRadar(db, a, jevConfigured() ? jevClient : null).catch((e) => console.error(`radar ${a.id}:`, (e as Error).message));
+  }
+}
+
 // A cada 6h: renova tokens e sincroniza métricas de todas as contas.
 async function housekeeping(): Promise<void> {
   await refreshTokens();
@@ -45,5 +56,7 @@ app.listen(config.port, () => {
   if (!missingConfig().length) console.log(`Redirect URI do login do Instagram: ${redirectUri()}`);
   if (config.fbAppId) console.log(`Redirect URI do login do Facebook: ${fbRedirectUri()}`);
   housekeeping().catch((e) => console.error('housekeeping:', e));
+  radarTick();
+  setInterval(radarTick, RADAR_EVERY);
   setInterval(() => housekeeping().catch((e) => console.error('housekeeping:', e)), 6 * 60 * 60 * 1000);
 });

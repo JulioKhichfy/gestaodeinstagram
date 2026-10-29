@@ -9,7 +9,9 @@ export interface Account {
   folder: string;
   connected: boolean;
   tokenExpiresAt: number | null;
-  business: 'livros' | 'servicos' | 'loja';
+  business: 'livros' | 'servicos' | 'loja' | 'conteudo';
+  /** Contas com Radar de assuntos (ex.: página de clube). */
+  radar?: { topic: string; keywords: string[]; feeds: { name: string; url: string }[]; series?: string[] };
   /** Conexão já inclui a permissão de métricas (conexões da v1 precisam reconectar). */
   hasInsights: boolean;
   syncing: boolean;
@@ -311,6 +313,42 @@ export interface ClaudeMessage {
 
 export type Artifact =
   | 'legenda' | 'roteiro' | 'carrossel' | 'card' | 'ganchos' | 'hashtags' | 'som' | 'ideias' | 'melhorar' | 'analise' | 'trafego' | 'resposta' | 'livre';
+
+// ---------- Radar e Raio-X ----------
+
+export type Temperature = 'quente' | 'morna' | 'fria';
+
+export interface RadarCluster {
+  id: string;
+  title: string;
+  summary: string;
+  items: { source: string; title: string; link: string; published: string }[];
+  sources: number;
+  firstAt: string;
+  lastAt: string;
+  temperature: Temperature;
+  kind: string | null;
+  kindLabel: string | null;
+  confirmed: number | null;
+  relevance: number | null;
+  status: 'novo' | 'usado' | 'ignorado';
+  draftId: number | null;
+  jobId: string | null;
+}
+
+export interface RadarView {
+  topic: string;
+  feeds: string[];
+  lastRefresh: number | null;
+  jev: boolean;
+  clusters: RadarCluster[];
+}
+
+export interface Pauta {
+  theme: string;
+  kind: GenKind;
+  description: string;
+}
 
 // ---------- Captar clientes ----------
 
@@ -718,6 +756,33 @@ export class Api {
 
   trackStock(url: string) {
     return firstValueFrom(this.http.post<void>('/api/stock/track', { url }));
+  }
+
+  radar(id: string) {
+    return firstValueFrom(this.http.get<RadarView>(`/api/accounts/${id}/radar`));
+  }
+  refreshRadar(id: string) {
+    return firstValueFrom(
+      this.http.post<{ added: number; read: number; classified: number; feeds: { name: string; ok: boolean; items: number; error?: string }[] }>(
+        `/api/accounts/${id}/radar/refresh`,
+        {},
+      ),
+    );
+  }
+  radarPost(id: string, clusterId: string, kind: GenKind) {
+    return firstValueFrom(this.http.post<GenJob>(`/api/accounts/${id}/radar/${clusterId}/post`, { kind }));
+  }
+  setRadarStatus(id: string, clusterId: string, status: 'novo' | 'ignorado') {
+    return firstValueFrom(this.http.patch<void>(`/api/accounts/${id}/radar/${clusterId}`, { status }));
+  }
+  radarSeries(id: string) {
+    return firstValueFrom(this.http.get<string[]>(`/api/accounts/${id}/radar/series`));
+  }
+  suggestPautas(id: string, serie: string) {
+    return firstValueFrom(this.http.post<Pauta[]>(`/api/accounts/${id}/radar/pautas`, { serie }));
+  }
+  generatePautas(id: string, serie: string, items: { theme: string; kind: GenKind }[]) {
+    return firstValueFrom(this.http.post<GenJob>(`/api/accounts/${id}/radar/pautas/generate`, { serie, items }));
   }
 
   leadsStatus(id: string) {

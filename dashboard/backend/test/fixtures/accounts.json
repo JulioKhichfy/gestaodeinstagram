@@ -25,6 +25,24 @@
     "label": "Projetos",
     "username": "projetos.exemplo",
     "folder": "dashboard/backend/test/fixtures/contas/projetos",
-    "business": "servicos"
+    "business": "servicos",
+    "radar": {
+      "topic": "Clube Exemplo",
+      "keywords": [
+        "clube exemplo",
+        "exemplense"
+      ],
+      "feeds": [
+        {
+          "name": "Notícias",
+          "url": "https://exemplo.test/rss"
+        },
+        {
+          "name": "Geral",
+          "url": "https://geral.test/rss",
+          "filter": true
+        }
+      ]
+    }
   }
 ]

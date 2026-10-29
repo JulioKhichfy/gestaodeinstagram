@@ -25,6 +25,8 @@ export type GenStep = 'fila' | 'escrevendo' | 'revisando' | 'reescrevendo' | 'mi
 export interface GenItem {
   theme: string;
   kind: GenKind;
+  /** Fatos e regras extras para o Claude (ex.: notícia do Radar com fonte, ou série histórica). */
+  brief?: string;
   step: GenStep;
   /** Notas do Jev em cada versão (a 1ª é a do texto original). */
   grades: number[];
@@ -80,11 +82,14 @@ export interface Written {
   searchTerms: string[];
 }
 
-export function writePrompt(theme: string, kind: GenKind): string {
+export function writePrompt(theme: string, kind: GenKind, brief?: string): string {
   return `# Tarefa
 Crie um ${KIND_LABELS[kind]} para o Instagram sobre o tema abaixo.
 Tema: ${theme}
-
+${brief ? `
+# Informações e regras deste post (prevalecem sobre o resto)
+${brief}
+` : ''}
 Responda SOMENTE com um objeto JSON válido, sem texto antes ou depois e sem bloco de código, neste formato:
 {"titulo": "...", "legenda": "...", "slides": [], "roteiro": "", "busca_midia": []}
 
@@ -207,7 +212,7 @@ function draftNotes(item: GenItem, written: Written, media: StockItem[]): string
 async function generateOne(db: DatabaseSync, deps: GenDeps, account: AccountConfig, job: GenJob, item: GenItem): Promise<void> {
   const system = buildSystemPrompt(db, { account, artifact: 'legenda', instruction: '' });
   item.step = 'escrevendo';
-  const written = parseWritten(await deps.claude(system, writePrompt(item.theme, item.kind)), item.theme);
+  const written = parseWritten(await deps.claude(system, writePrompt(item.theme, item.kind, item.brief)), item.theme);
   item.title = written.title;
 
   let best: { caption: string; review: CaptionReview | null } = { caption: written.caption, review: null };
@@ -279,7 +284,7 @@ async function generateOne(db: DatabaseSync, deps: GenDeps, account: AccountConf
 export function startGeneration(
   db: DatabaseSync,
   account: AccountConfig,
-  requests: { theme: string; kind: GenKind }[],
+  requests: { theme: string; kind: GenKind; brief?: string }[],
   opts: { rewrite: boolean; media: boolean },
   deps: GenDeps = defaultDeps(),
 ): GenJob {

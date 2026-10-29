@@ -303,6 +303,47 @@ export const HELP: HelpSection[] = [
     ],
   },
   {
+    id: 'radar',
+    title: 'Radar e Raio-X (páginas de tema, como um clube)',
+    intro:
+      'Contas com "radar" no arquivo de contas ganham duas abas: Radar (notícias quentes do tema) e Raio-X (conteúdo histórico em séries). Foram pensadas para páginas como a do Flamengo, e servem para qualquer tema (outro clube, um artista, uma cidade).',
+    items: [
+      {
+        q: 'Como o Radar decide o que está quente?',
+        a: [
+          '- A cada 10 minutos (com o dashboard aberto no PC) ele lê as fontes configuradas: Google Notícias, ge, Coluna do Fla, ESPN, UOL…',
+          '- Junta a mesma notícia publicada por vários veículos. Quente = 3 ou mais veículos nas últimas 6 horas, ou fato de última hora muito relevante.',
+          '- O Jev classifica o tipo (última hora, mercado, jogo, bastidores, opinião, história) e se é Confirmado ou Rumor.',
+        ],
+      },
+      {
+        q: 'O que acontece em "Criar post"?',
+        a: [
+          'O Claude escreve um post com as próprias palavras, só com os fatos das manchetes, e termina com "Fonte: veículo". Se o Jev achar que é rumor, o post diz que não está confirmado. O Jev revisa a legenda e o resultado vira rascunho para você conferir e publicar.',
+          'Velocidade importa, mas credibilidade importa mais: confira o rascunho antes de postar, principalmente em notícias de mercado.',
+        ],
+      },
+      {
+        q: 'E o Raio-X?',
+        a: [
+          'Escolha uma série (linha do tempo, ídolos, jogos históricos, gols, títulos, curiosidades…), clique em "Sugerir pautas", marque as que quiser e gere. O Claude marca [CONFERIR] em datas, placares e nomes de que não tem certeza: cheque esses pontos antes de publicar. Frases de entrevista só são citadas quando foram publicadas, com quem disse e onde.',
+        ],
+      },
+      {
+        q: 'E as fotos e vídeos?',
+        a: [
+          'Fotos de jogos, de agências, da TV e do site do clube têm dono: usá-las sem autorização pode derrubar posts e a conta. Prefira artes com texto e números (o "card de texto" do editor), fotos suas ou material com licença livre. Por isso o Radar não sugere fotos de banco de imagens nas notícias.',
+        ],
+      },
+      {
+        q: 'Como criar o Radar para outro tema (ex.: Milan)?',
+        a: [
+          'No arquivo de contas, copie o bloco "radar" da conta do Flamengo para a conta nova e troque o tema, as palavras e as fontes (Google Notícias aceita qualquer busca, ex.: q=AC+Milan&hl=it). Reinicie o dashboard.',
+        ],
+      },
+    ],
+  },
+  {
     id: 'clientes',
     title: 'Captar clientes',
     intro:

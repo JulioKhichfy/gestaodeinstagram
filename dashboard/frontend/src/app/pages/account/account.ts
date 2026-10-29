@@ -25,7 +25,9 @@ export class AccountPage {
   readonly connected = input<string>();
   readonly error = input<string>();
 
-  protected readonly sections = [
+  private readonly allSections: { path: string; label: string; help: string; radar?: boolean }[] = [
+    { path: 'radar', label: 'Radar', help: 'Notícias quentes do tema, das fontes configuradas, com um clique para virar post', radar: true },
+    { path: 'raio-x', label: 'Raio-X', help: 'Séries de conteúdo histórico: o Claude sugere pautas e o gerador cria os posts', radar: true },
     { path: 'publicar', label: 'Publicar', help: 'Monta e publica post, carrossel ou Reels (com Claude e Jev ajudando na legenda)' },
     { path: 'rascunhos', label: 'Rascunhos', help: 'Ideias e textos em preparo; "＋ Gerar posts" cria vários de uma vez com Claude + Jev' },
     { path: 'relatorios', label: 'Relatórios', help: 'Crescimento, alcance, melhores formatos, público e horários' },
@@ -37,6 +39,7 @@ export class AccountPage {
   ];
 
   protected account = computed(() => this.store.byId(this.id()));
+  protected sections = computed(() => this.allSections.filter((s) => !s.radar || !!this.account()?.radar));
   protected overview = signal<Overview | null>(null);
   protected loading = signal(false);
   protected banner = signal<{ kind: 'ok' | 'error' | 'info'; text: string } | null>(null);

@@ -96,7 +96,7 @@
   </section>
 
   <nav class="subnav" aria-label="Seções da conta">
-    @for (s of sections; track s.path) {
+    @for (s of sections(); track s.path) {
       <a [routerLink]="s.path" routerLinkActive="active" [title]="s.help">{{ s.label }}</a>
     }
   </nav>

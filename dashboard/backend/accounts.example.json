@@ -15,5 +15,35 @@
     "ads": {
       "audience": "Opcional: sobrepõe a recomendação padrão do tipo de negócio (objective, audience, budget, tip)."
     }
+  },
+  {
+    "id": "meu-clube",
+    "label": "Página do clube",
+    "username": "pagina.do.clube",
+    "folder": "dashboard/exemplo-conta",
+    "business": "conteudo",
+    "radar": {
+      "topic": "AC Milan",
+      "keywords": [
+        "milan",
+        "rossoneri",
+        "san siro"
+      ],
+      "feeds": [
+        {
+          "name": "Google Notícias (BR)",
+          "url": "https://news.google.com/rss/search?q=AC+Milan&hl=pt-BR&gl=BR&ceid=BR:pt-419"
+        },
+        {
+          "name": "Google News (Itália)",
+          "url": "https://news.google.com/rss/search?q=AC+Milan&hl=it&gl=IT&ceid=IT:it"
+        },
+        {
+          "name": "ESPN",
+          "url": "https://www.espn.com.br/rss/futebol",
+          "filter": true
+        }
+      ]
+    }
   }
 ]

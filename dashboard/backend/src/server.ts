@@ -12,6 +12,7 @@ import { discovery, facebookCallback } from './routes-discovery.ts';
 import { generateRoutes } from './routes-generate.ts';
 import { jevRoutes } from './routes-jev.ts';
 import { leadsRoutes } from './routes-leads.ts';
+import { radarRoutes } from './routes-radar.ts';
 import { v2 } from './routes-v2.ts';
 import { isSyncing, syncAccount } from './sync.ts';
 import { connectionAuth, encrypt, read, write } from './store.ts';
@@ -284,6 +285,7 @@ api.use(auth.requireSession, discovery);
 api.use(auth.requireSession, jevRoutes());
 api.use(auth.requireSession, generateRoutes());
 api.use(auth.requireSession, leadsRoutes());
+api.use(auth.requireSession, radarRoutes());
 
 // Rotas da versão 2 (relatórios, experimentos, ciclos, rascunhos, Claude, tráfego pago).
 api.use(auth.requireSession, v2);

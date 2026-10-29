@@ -446,6 +446,12 @@ const AD_RECOMMENDATIONS: Record<AccountConfig['business'], AdRecommendation> = 
     budget: 'Teste com R$ 20 a R$ 50 por dia, por 5 a 7 dias; aumente o que vender.',
     tip: 'Impulsione Reels do produto em uso e carrosséis com preço e condição claros na legenda.',
   },
+  conteudo: {
+    objective: 'Seguidores (visitas ao perfil) ou Engajamento',
+    audience: 'Quem se interessa pelo tema da página (ex.: torcedores do clube): interesses no tema, Brasil, 18-45 anos.',
+    budget: 'Teste com R$ 10 a R$ 20 por dia, por 5 dias, só em posts que já engajaram bem sem impulso.',
+    tip: 'Impulsione conteúdo autoral que gerou muitos compartilhamentos (curiosidades, listas, história). Não impulsione notícia de terceiros nem foto sem direito de uso.',
+  },
 };
 
 v2.get(

@@ -186,6 +186,8 @@ export class DraftsPage {
   private router = inject(Router);
 
   readonly id = input.required<string>();
+  /** ?abrir=ID: abre este rascunho ao carregar. */
+  readonly abrir = input<string>();
 
   protected readonly kinds = Object.keys(KIND_LABELS) as DraftKind[];
   protected readonly kindLabels = KIND_LABELS;
@@ -263,6 +265,8 @@ export class DraftsPage {
   async load(id: string): Promise<void> {
     try {
       this.drafts.set(await this.api.drafts(id));
+      const open = this.drafts().find((d) => String(d.id) === this.abrir());
+      if (open && !this.selected()) this.select(open);
     } catch (e) {
       this.error.set(errorMessage(e));
     }

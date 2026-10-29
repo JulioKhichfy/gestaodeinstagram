@@ -30,6 +30,8 @@ export const routes: Routes = [
           { path: 'trafego', loadComponent: () => import('./pages/account/ads').then((m) => m.AdsPage) },
           { path: 'descoberta', loadComponent: () => import('./pages/account/discovery').then((m) => m.DiscoveryPage) },
           { path: 'clientes', loadComponent: () => import('./pages/account/leads').then((m) => m.LeadsPage) },
+          { path: 'radar', loadComponent: () => import('./pages/account/radar').then((m) => m.RadarPage) },
+          { path: 'raio-x', loadComponent: () => import('./pages/account/raio-x').then((m) => m.RaioXPage) },
         ],
       },
       { path: '', pathMatch: 'full', redirectTo: 'visao-geral' },

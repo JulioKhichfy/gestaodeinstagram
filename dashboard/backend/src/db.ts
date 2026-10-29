@@ -237,6 +237,28 @@ const MIGRATIONS: string[] = [
   );
   CREATE INDEX comments_account_ts ON comments(account_id, timestamp);
   `,
+  // Radar de assuntos: manchetes das fontes do tema; o item mais antigo de cada grupo guarda a classificação.
+  `
+  CREATE TABLE radar_items (
+    id TEXT PRIMARY KEY,             -- hash do link
+    account_id TEXT NOT NULL,
+    feed TEXT NOT NULL,
+    source TEXT NOT NULL,            -- veículo (ge, ESPN…)
+    title TEXT NOT NULL,
+    link TEXT NOT NULL,
+    summary TEXT NOT NULL DEFAULT '',
+    published_at TEXT NOT NULL,
+    fetched_at INTEGER NOT NULL,
+    kind TEXT,                       -- ultima_hora | mercado | jogo | bastidor | opiniao | historia | outro (Jev)
+    confirmed REAL,                  -- 0 a 1: fato confirmado x rumor (Jev)
+    relevance REAL,                  -- 0 a 1 (Jev)
+    classified_at INTEGER,
+    status TEXT NOT NULL DEFAULT 'novo',  -- novo | usado | ignorado
+    job_id TEXT,
+    draft_id INTEGER
+  );
+  CREATE INDEX radar_account_pub ON radar_items(account_id, published_at);
+  `,
 ];
 
 export function openDb(file: string): DatabaseSync {

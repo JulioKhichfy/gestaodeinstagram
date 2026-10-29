@@ -1,13 +1,25 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const BUSINESS_TYPES = ['livros', 'servicos', 'loja'] as const;
+/** conteudo = página de mídia/fã (ex.: futebol), que vive de audiência, não de vender um produto próprio. */
+export const BUSINESS_TYPES = ['livros', 'servicos', 'loja', 'conteudo'] as const;
 
 export interface AdRecommendation {
   objective: string;
   audience: string;
   budget: string;
   tip: string;
+}
+
+/** Radar de assuntos: fontes de notícia (RSS/Atom) e palavras do tema. */
+export interface RadarConfig {
+  /** Nome do tema (ex.: "Flamengo"). */
+  topic: string;
+  /** Palavras que identificam o tema; usadas para filtrar fontes genéricas (feed com filter: true). */
+  keywords: string[];
+  feeds: { name: string; url: string; filter?: boolean }[];
+  /** Séries do Raio-X (conteúdo histórico); vazio = séries padrão. */
+  series?: string[];
 }
 
 export interface AccountConfig {
@@ -21,6 +33,8 @@ export interface AccountConfig {
   business: (typeof BUSINESS_TYPES)[number];
   /** Recomendação de tráfego pago específica da conta (sobrepõe a padrão do tipo de negócio). */
   ads?: Partial<AdRecommendation>;
+  /** Radar de assuntos quentes e Raio-X (opcional). */
+  radar?: RadarConfig;
 }
 
 /** Raiz do projeto (onde ficam as pastas das contas). */
@@ -42,6 +56,14 @@ function loadAccounts(file: string): AccountConfig[] {
     if (!/^[a-z0-9-]{1,40}$/.test(a.id ?? '')) throw new Error(`${file}: id inválido "${a.id}" (use letras minúsculas, números e hífen).`);
     if (!a.username || !a.label || !a.folder) throw new Error(`${file}: a conta "${a.id}" precisa de label, username e folder.`);
     if (!BUSINESS_TYPES.includes(a.business)) throw new Error(`${file}: business da conta "${a.id}" deve ser ${BUSINESS_TYPES.join(', ')}.`);
+    if (a.radar) {
+      const r = a.radar;
+      if (!r.topic || !Array.isArray(r.keywords) || !Array.isArray(r.feeds) || !r.feeds.length)
+        throw new Error(`${file}: radar da conta "${a.id}" precisa de topic, keywords e feeds.`);
+      for (const f of r.feeds) {
+        if (!f.name || !/^https:\/\//.test(f.url ?? '')) throw new Error(`${file}: feed inválido no radar da conta "${a.id}" (use name e url https).`);
+      }
+    }
   }
   return list;
 }
