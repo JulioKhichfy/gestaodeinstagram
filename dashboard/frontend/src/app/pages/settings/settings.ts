@@ -30,8 +30,8 @@ import { Api, Settings, errorMessage } from '../../core/api';
 
         <div class="actions">
           @if (saved()) { <span class="muted">Salvo!</span> }
-          <button type="button" class="btn ghost" (click)="restore()">Restaurar padrão</button>
-          <button type="submit" class="btn primary">Salvar</button>
+          <button title="Volta aos pesos e limites originais" type="button" class="btn ghost" (click)="restore()">Restaurar padrão</button>
+          <button title="Aplica os novos pesos em todos os relatórios" type="submit" class="btn primary">Salvar</button>
         </div>
       </form>
     }

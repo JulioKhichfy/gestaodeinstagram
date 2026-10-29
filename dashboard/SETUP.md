@@ -73,6 +73,35 @@ O Jev (TypeSafe AI) revisa legendas e classifica os posts nos Experimentos (veja
 Coloque `TYPESAFE_API_KEY=` no `backend/.env`, ou deixe como variável de ambiente do Windows, e reinicie.
 Sem a chave, essas funções ficam ocultas.
 
+### 1.5 Acrescentar uma conta do Instagram nova (do zero)
+
+**No Instagram (celular):**
+1. **Criar a conta:** no perfil, toque no seu nome no topo › **Adicionar conta do Instagram** › **Criar nova conta**.
+2. **Torná-la profissional:** Configurações e atividade › **Tipo de conta e ferramentas** › **Mudar para conta profissional**
+   › Criador de conteúdo ou Empresa › escolha a categoria.
+3. **Vincular a uma Página do Facebook:** Editar perfil › **Página** › **Criar Página do Facebook** (ou conectar uma que
+   você já administra). O Facebook logado precisa ser o seu, o mesmo que você usa no dashboard.
+   Atenção: ligar Instagram e Facebook só pela Central de Contas **não basta**; o vínculo precisa ser com a Página.
+
+**No dashboard (arquivos):**
+4. Crie uma pasta na raiz do projeto para a conta (ex.: `minha-nova-conta/`) e copie `dashboard/exemplo-conta/claude.md`
+   para dentro dela. Preencha público, tom de voz e produtos: o Claude e o Jev usam esse arquivo.
+5. No arquivo de contas em uso (`backend/accounts.json`, ou o que estiver em `ACCOUNTS_FILE` no `.env`), acrescente:
+   ```json
+   { "id": "nova", "label": "Minha nova conta", "username": "o.arroba.sem.arroba", "folder": "minha-nova-conta", "business": "servicos" }
+   ```
+   `business`: `livros`, `servicos` ou `loja`. O `id` não pode mudar depois (as métricas ficam ligadas a ele).
+6. Reinicie o dashboard (Ctrl+C e `npm run dev`): as contas são lidas ao iniciar. A nova aba aparece no topo.
+
+**Conectar:**
+7. Na aba nova, clique em **Conectar pelo Facebook**.
+8. Na janela do Facebook, clique em **Editar acesso** (ou "Editar configurações") e **marque a Página e a conta do
+   Instagram novas**. O Facebook lembra das escolhas anteriores e, sem isso, pode não incluir a conta nova.
+9. Ao voltar, a conta aparece como conectada e a sincronização começa.
+
+Numa conta nova, os relatórios ficam vazios até haver posts; dados de público (idade, cidade) só aparecem a partir de
+100 seguidores, e as métricas da Meta atrasam até 48 h.
+
 ## 2. Túnel ngrok (endereço fixo gratuito)
 
 1. Crie uma conta grátis em https://ngrok.com

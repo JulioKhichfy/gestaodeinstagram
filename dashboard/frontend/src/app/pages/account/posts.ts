@@ -45,7 +45,7 @@ const SIGNAL_LABELS: Record<string, string> = {
           </select>
         </label>
         <span class="spacer"></span>
-        <button type="button" class="btn ghost" (click)="exportCsv()">Exportar CSV</button>
+        <button title="Baixa a tabela para abrir no Excel ou Planilhas" type="button" class="btn ghost" (click)="exportCsv()">Exportar CSV</button>
       </div>
 
       @if (error()) { <p class="alert error">{{ error() }}</p> }
@@ -98,7 +98,7 @@ const SIGNAL_LABELS: Record<string, string> = {
                         <label class="field"><span>Estilo</span><input name="style" list="style-options" [value]="p.style ?? ''" /></label>
                         <label class="field"><span>Pilar de conteúdo</span><input name="pillar" list="pillar-options" [value]="p.pillar ?? ''" placeholder="Ex.: bastidores, produto, dica" /></label>
                         <label class="field"><span>Anotações</span><textarea name="notes" rows="3" [value]="p.notes"></textarea></label>
-                        <button class="btn primary" type="submit">Salvar</button>
+                        <button title="Guarda gancho, estilo e pilar deste post (confirma a sugestão do Jev)" class="btn primary" type="submit">Salvar</button>
                       </form>
                     </div>
                   </td>

@@ -35,7 +35,7 @@ const ACCEPT: Record<PostType, string> = {
 
       <div class="segmented" role="tablist">
         @for (t of types; track t.value) {
-          <button type="button" role="tab" [class.active]="type() === t.value"
+          <button type="button" role="tab" [class.active]="type() === t.value" [title]="t.help"
                   [disabled]="busy()" (click)="setType(t.value)">
             {{ t.label }}
           </button>
@@ -81,7 +81,7 @@ const ACCEPT: Record<PostType, string> = {
             <span>{{ type() === 'reel' ? 'Escolher vídeo' : 'Adicionar mídia' }}</span>
           </label>
           @if (type() !== 'reel') {
-            <button type="button" class="add-tile" [disabled]="busy()" (click)="showTextCard.set(true)">
+            <button title="Cria uma imagem a partir de um texto (para post só de texto)" type="button" class="add-tile" [disabled]="busy()" (click)="showTextCard.set(true)">
               <span class="plus">Aa</span>
               <span>Criar card de texto</span>
             </button>
@@ -115,7 +115,7 @@ const ACCEPT: Record<PostType, string> = {
           <div class="cover">
             @if (cover(); as c) {
               <img [src]="c.previewUrl" alt="Capa" />
-              <button type="button" class="btn ghost" [disabled]="busy()" (click)="setCover(null)">Remover capa</button>
+              <button title="Volta a usar o primeiro quadro do vídeo como capa" type="button" class="btn ghost" [disabled]="busy()" (click)="setCover(null)">Remover capa</button>
             } @else {
               <label class="btn ghost">
                 <input type="file" hidden accept="image/*" [disabled]="busy()" (change)="onCover($event)" />
@@ -163,8 +163,8 @@ const ACCEPT: Record<PostType, string> = {
       }
 
       <div class="actions">
-        <button type="button" class="btn ghost" [disabled]="busy() || !dirty()" (click)="reset()">Limpar</button>
-        <button type="button" class="btn primary" [disabled]="!canPublish()" (click)="publish()">
+        <button title="Apaga mídias e legenda deste editor" type="button" class="btn ghost" [disabled]="busy() || !dirty()" (click)="reset()">Limpar</button>
+        <button title="Publica agora no Instagram (precisa do túnel aberto)" type="button" class="btn primary" [disabled]="!canPublish()" (click)="publish()">
           Publicar agora
         </button>
       </div>
@@ -181,10 +181,10 @@ export class Composer {
   readonly draft = input<Draft | null>(null);
   readonly published = output<void>();
 
-  protected readonly types: { value: PostType; label: string }[] = [
-    { value: 'image', label: 'Post estático' },
-    { value: 'carousel', label: 'Carrossel' },
-    { value: 'reel', label: 'Reels' },
+  protected readonly types: { value: PostType; label: string; help: string }[] = [
+    { value: 'image', label: 'Post estático', help: '1 foto (ou card de texto) no feed' },
+    { value: 'carousel', label: 'Carrossel', help: 'De 2 a 20 fotos e/ou vídeos que a pessoa desliza' },
+    { value: 'reel', label: 'Reels', help: '1 vídeo vertical; é o formato que mais alcança gente nova' },
   ];
   protected readonly captionMax = CAPTION_MAX;
   protected readonly hashtagSoft = HASHTAG_SOFT;
@@ -274,6 +274,7 @@ export class Composer {
         const blob = await this.api.stockFile(m.download);
         const file = new File([blob], `${m.id}.${m.kind === 'video' ? 'mp4' : 'jpg'}`, { type: blob.type });
         await this.addFiles([m.kind === 'photo' ? await cropToFeed(file) : file]);
+        if (m.track) this.api.trackStock(m.track).catch(() => undefined); // regra do Unsplash
       }
     } catch (e) {
       this.fail(`Não consegui baixar a mídia do rascunho: ${errorMessage(e)}`);

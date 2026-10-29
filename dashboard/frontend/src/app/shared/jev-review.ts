@@ -23,7 +23,7 @@ const pct = (v: number) => `${Math.round(v * 100)}%`;
         <small class="muted">avaliação em segundos · não reescreve o texto</small>
         <span class="spacer"></span>
         @if (configured() !== false) {
-          <button type="button" class="btn ghost" [disabled]="busy() || !caption().trim()" (click)="review()">
+          <button title="O Jev dá nota de 0 a 100 para gancho, clareza, chamada para ação e tom (não altera o texto)" type="button" class="btn ghost" [disabled]="busy() || !caption().trim()" (click)="review()">
             @if (busy()) { <span class="spinner"></span> Avaliando… } @else { {{ result() ? 'Revisar de novo' : 'Revisar legenda' }} }
           </button>
         }
@@ -66,7 +66,7 @@ const pct = (v: number) => `${Math.round(v * 100)}%`;
 
         @if (offerTags() && (r.hook || r.style)) {
           <div class="row end">
-            <button type="button" class="btn ghost" (click)="tags.emit({ hook: r.hook?.value ?? null, style: r.style?.value ?? null })">
+            <button title="Preenche gancho e estilo do rascunho com o que o Jev identificou" type="button" class="btn ghost" (click)="tags.emit({ hook: r.hook?.value ?? null, style: r.style?.value ?? null })">
               Usar gancho e estilo sugeridos
             </button>
           </div>

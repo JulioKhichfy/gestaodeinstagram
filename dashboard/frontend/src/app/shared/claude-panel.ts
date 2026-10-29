@@ -80,7 +80,8 @@ export const onlyHashtags = (text: string) => (text.match(/#[\p{L}\p{N}_]+/gu) ?
       <div class="chips" role="radiogroup" aria-label="O que criar">
         @for (a of artifacts(); track a) {
           <button type="button" class="chip" role="radio" [attr.aria-checked]="artifact() === a"
-                  [class.active]="artifact() === a" (click)="artifact.set(a)">{{ labels[a] }}</button>
+                  [class.active]="artifact() === a" [title]="help[a]" (click)="artifact.set(a)">{{ labels[a] }}
+            @if (answers()[a] && artifact() !== a) { <span class="dot" aria-label="tem resposta">•</span> }</button>
         }
       </div>
 
@@ -93,7 +94,7 @@ export const onlyHashtags = (text: string) => (text.match(/#[\p{L}\p{N}_]+/gu) ?
         <small class="muted">
           @if (currentText().trim()) { O texto atual vai junto como contexto. } Ctrl+Enter envia.
         </small>
-        <button type="button" class="btn primary" [disabled]="busy()" (click)="ask()">
+        <button title="Envia o pedido ao Claude com o perfil da conta e o texto atual" type="button" class="btn primary" [disabled]="busy()" (click)="ask()">
           @if (busy()) { <span class="spinner"></span> Escrevendo… } @else { Pedir ao Claude }
         </button>
       </div>
@@ -106,7 +107,7 @@ export const onlyHashtags = (text: string) => (text.match(/#[\p{L}\p{N}_]+/gu) ?
             <ul class="options">
               @for (o of options(); track $index) {
                 <li><span>{{ o }}</span>
-                  <button type="button" class="btn ghost" (click)="use.emit({ text: o, mode: 'firstLine' })">Usar como 1ª linha</button></li>
+                  <button title="Troca só a primeira linha da legenda por este gancho" type="button" class="btn ghost" (click)="use.emit({ text: o, mode: 'firstLine' })">Usar como 1ª linha</button></li>
               }
             </ul>
           } @else {
@@ -117,17 +118,17 @@ export const onlyHashtags = (text: string) => (text.match(/#[\p{L}\p{N}_]+/gu) ?
               {{ text.length }} caracteres@if (tooLong()) { · passa do limite de {{ captionMax }} da legenda }
             </small>
             <div class="row end">
-              <button type="button" class="btn ghost" (click)="copy(text)">{{ copied() ? 'Copiado!' : 'Copiar' }}</button>
+              <button title="Copia a resposta para colar onde quiser" type="button" class="btn ghost" (click)="copy(text)">{{ copied() ? 'Copiado!' : 'Copiar' }}</button>
               @if (tooLong()) {
-                <button type="button" class="btn ghost" [disabled]="busy()" (click)="shorten()">Pedir versão mais curta</button>
+                <button title="Pede ao Claude para reduzir para até 1.500 caracteres" type="button" class="btn ghost" [disabled]="busy()" (click)="shorten()">Pedir versão mais curta</button>
               }
               @if (answerArtifact() === 'hashtags') {
                 @if (hashtagsOf(text); as tags) {
-                  <button type="button" class="btn primary" (click)="use.emit({ text: tags, mode: 'append' })">Adicionar as hashtags ao final</button>
+                  <button title="Coloca só as hashtags no fim do texto" type="button" class="btn primary" (click)="use.emit({ text: tags, mode: 'append' })">Adicionar as hashtags ao final</button>
                 }
               } @else if (answerArtifact() !== 'ganchos') {
-                <button type="button" class="btn ghost" (click)="use.emit({ text, mode: 'append' })">Adicionar ao final</button>
-                <button type="button" class="btn primary" (click)="use.emit({ text, mode: 'replace' })">Usar este texto</button>
+                <button title="Mantém o seu texto e soma a resposta no fim" type="button" class="btn ghost" (click)="use.emit({ text, mode: 'append' })">Adicionar ao final</button>
+                <button title="Troca todo o texto do campo pela resposta" type="button" class="btn primary" (click)="use.emit({ text, mode: 'replace' })">Usar este texto</button>
               }
             </div>
           </div>
@@ -158,6 +159,7 @@ export const onlyHashtags = (text: string) => (text.match(/#[\p{L}\p{N}_]+/gu) ?
         border-bottom: 1px solid var(--border); padding-bottom: 6px; } }
     .too-long { color: var(--danger, #c0392b); font-weight: 600; }
     .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip .dot { color: var(--accent); margin-left: 2px; }
     .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
     .row.end { justify-content: flex-end; }
     .answer { display: grid; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
@@ -181,13 +183,15 @@ export class ClaudePanel {
   protected readonly help = ARTIFACT_HELP;
   protected readonly captionMax = CAPTION_MAX;
   protected readonly hashtagsOf = onlyHashtags;
-  /** Tipo do pedido que gerou a resposta atual (os botões dependem dele). */
-  protected answerArtifact = signal<Artifact>('legenda');
+  /** A resposta mostrada é sempre a do botão selecionado (os botões de ação dependem dele). */
+  protected answerArtifact = computed(() => this.artifact());
   protected artifact = signal<Artifact>('legenda');
   protected instruction = signal('');
   protected busy = signal(false);
   protected error = signal('');
-  protected answer = signal('');
+  /** Uma resposta por tipo de pedido: trocar de botão não apaga a resposta do outro. */
+  protected answers = signal<Partial<Record<Artifact, string>>>({});
+  protected answer = computed(() => this.answers()[this.artifact()] ?? '');
   protected copied = signal(false);
   protected history = signal<ClaudeMessage[]>([]);
   protected options = computed(() => listOptions(this.answer()));
@@ -208,7 +212,7 @@ export class ClaudePanel {
       const id = this.draftId();
       untracked(() => {
         this.history.set([]);
-        this.answer.set('');
+        this.answers.set({});
         if (id) this.api.draftMessages(id).then((m) => this.history.set(m)).catch(() => undefined);
       });
     });
@@ -230,10 +234,16 @@ export class ClaudePanel {
   /** Resposta passou do limite da legenda: pede ao Claude para encurtar a própria resposta. */
   async shorten(): Promise<void> {
     if (this.busy()) return;
-    await this.request('melhorar', 'Encurte para no máximo 1.500 caracteres, mantendo o gancho, a ideia principal e a chamada para ação.', this.answer());
+    await this.request(
+      'melhorar',
+      'Encurte para no máximo 1.500 caracteres, mantendo o gancho, a ideia principal e a chamada para ação.',
+      this.answer(),
+      this.artifact(),
+    );
   }
 
-  private async request(artifact: Artifact, instruction: string, currentText: string): Promise<void> {
+  /** `storeAs`: em qual botão a resposta fica guardada (encurtar guarda no botão de onde veio). */
+  private async request(artifact: Artifact, instruction: string, currentText: string, storeAs: Artifact = artifact): Promise<void> {
     this.busy.set(true);
     this.error.set('');
     try {
@@ -244,8 +254,7 @@ export class ClaudePanel {
         currentText,
         draftId: this.draftId() ?? undefined,
       });
-      this.answerArtifact.set(artifact);
-      this.answer.set(text);
+      this.answers.update((all) => ({ ...all, [storeAs]: text }));
       const id = this.draftId();
       if (id) this.history.set(await this.api.draftMessages(id));
     } catch (e) {

@@ -313,7 +313,7 @@ export const HELP: HelpSection[] = [
         a: [
           '- O Claude escreve título, legenda e, conforme o formato, os textos dos slides ou o roteiro do Reels.',
           '- O Jev dá a nota da legenda. Abaixo de 75, as dicas dele viram instrução e o Claude reescreve (até 2 vezes). Fica a versão com a maior nota.',
-          '- Um banco de imagens gratuito (Pixabay) sugere fotos (carrossel e post) ou vídeos (Reels, verticais primeiro), e o Jev ordena pelo quanto combinam com o tema.',
+          '- Os bancos de imagens gratuitos configurados (Unsplash e Pixabay) sugerem fotos (carrossel e post) ou vídeos (Reels, só Pixabay, verticais primeiro), e o Jev ordena pelo quanto combinam com o tema.',
           'O Jev não escreve texto: ele avalia. Quem reescreve é o Claude, guiado pela avaliação do Jev.',
         ],
       },
@@ -322,7 +322,7 @@ export const HELP: HelpSection[] = [
         a: [
           'No rascunho, clique nas miniaturas para marcar o que vai no post (no carrossel, várias). O número no canto é o quanto o Jev acha que a mídia combina com o tema.',
           'Em "Levar para publicação", as mídias marcadas entram no editor sozinhas. Lá você ainda reordena, troca ou adiciona as suas.',
-          'As fotos e vídeos do Pixabay são gratuitos, inclusive para uso comercial. Dar crédito ao autor é opcional, mas recomendado; o nome está nas anotações do rascunho. As fotos sugeridas ficam guardadas no seu PC (regra do Pixabay) e são cortadas para 4:5 ao entrar no post.',
+          'As fotos e vídeos do Unsplash e do Pixabay são gratuitos, inclusive para uso comercial. Dê crédito ao autor quando puder (o nome está nas anotações do rascunho). As fotos do Pixabay ficam guardadas no seu PC (regra deles); as do Unsplash são baixadas na hora de publicar e o Unsplash é avisado (regra deles). Todas entram no post cortadas para 4:5.',
         ],
       },
       {

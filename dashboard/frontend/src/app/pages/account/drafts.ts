@@ -21,6 +21,12 @@ const ARTIFACTS_BY_KIND: Record<DraftKind, Artifact[]> = {
   story: ['livre', 'ganchos', 'melhorar'],
 };
 
+const PROVIDERS: Record<StockItem['provider'], { label: string; site: string }> = {
+  unsplash: { label: 'Unsplash', site: 'https://unsplash.com/?utm_source=gestao_instagram&utm_medium=referral' },
+  pixabay: { label: 'Pixabay', site: 'https://pixabay.com' },
+  pexels: { label: 'Pexels', site: 'https://www.pexels.com' },
+};
+
 @Component({
   selector: 'app-drafts',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -39,9 +45,9 @@ const ARTIFACTS_BY_KIND: Record<DraftKind, Artifact[]> = {
           <select [value]="newKind()" (change)="newKind.set($any($event.target).value)">
             @for (k of kinds; track k) { <option [value]="k">{{ kindLabels[k] }}</option> }
           </select>
-          <button class="btn primary" type="submit" [disabled]="!newTitle().trim()">Criar</button>
+          <button title="Cria um rascunho vazio com este título" class="btn primary" type="submit" [disabled]="!newTitle().trim()">Criar</button>
         </form>
-        <button type="button" class="link-btn" (click)="ideas.set(!ideas())">
+        <button title="Pede ao Claude 10 ideias; cada uma vira um rascunho" type="button" class="link-btn" (click)="ideas.set(!ideas())">
           {{ ideas() ? 'Fechar' : 'Sem ideias? Peça 10 ao Claude' }}
         </button>
         @if (ideas()) {
@@ -67,7 +73,7 @@ const ARTIFACTS_BY_KIND: Record<DraftKind, Artifact[]> = {
         } @else if (selected(); as d) {
           <div class="row">
             <input class="title" type="text" [value]="d.title" (change)="patch({ title: $any($event.target).value })" />
-            <button type="button" class="btn ghost danger" (click)="remove(d)">Excluir</button>
+            <button title="Apaga este rascunho" type="button" class="btn ghost danger" (click)="remove(d)">Excluir</button>
           </div>
           <div class="row">
             <label class="field"><span>Formato</span>
@@ -103,16 +109,15 @@ const ARTIFACTS_BY_KIND: Record<DraftKind, Artifact[]> = {
               <div class="thumbs">
                 @for (m of d.media; track m.id) {
                   <button type="button" class="thumb" [class.on]="m.selected" (click)="toggleMedia(d, m)"
-                          [title]="m.description + ' — ' + m.credit" [attr.aria-pressed]="!!m.selected">
+                          [title]="(m.selected ? 'Escolhida. Clique para tirar. ' : 'Clique para escolher. ') + m.description + ' — ' + m.credit" [attr.aria-pressed]="!!m.selected">
                     <img [src]="m.thumb" [alt]="m.description" loading="lazy" />
                     @if (m.kind === 'video') { <span class="tag">▶ {{ m.duration }}s{{ m.vertical ? '' : ' · horizontal' }}</span> }
                     @if (m.relevance !== undefined) { <span class="tag right" title="Quanto o Jev acha que combina com o tema">{{ pct(m.relevance) }}</span> }
                   </button>
                 }
               </div>
-              <small class="muted">Fotos e vídeos gratuitos do
-                @if (d.media[0].provider === 'pixabay') { <a href="https://pixabay.com" target="_blank" rel="noopener">Pixabay</a> }
-                @else { <a href="https://www.pexels.com" target="_blank" rel="noopener">Pexels</a> }.
+              <small class="muted">Fotos e vídeos gratuitos de
+                @for (p of providersOf(d); track p.label) { <a [href]="p.site" target="_blank" rel="noopener">{{ p.label }}</a>@if (!$last) {, } }.
                 Escolhidos: @for (m of selectedMedia(d); track m.id) {
                   <a [href]="m.pageUrl" target="_blank" rel="noopener">{{ m.credit }}</a>@if (!$last) {, }
                 } @empty { nenhum }.
@@ -126,7 +131,7 @@ const ARTIFACTS_BY_KIND: Record<DraftKind, Artifact[]> = {
           <div class="row end">
             <small class="muted">{{ saved() }}</small>
             <button type="button" class="btn primary" (click)="toPublish(d)" [disabled]="d.kind === 'story'"
-                    [title]="d.kind === 'story' ? 'Stories ainda não são publicados pelo dashboard' : ''">
+                    [title]="d.kind === 'story' ? 'Stories ainda não são publicados pelo dashboard' : 'Abre o editor de publicação com o texto e as mídias escolhidas (você confere antes de publicar)'">
               Levar para publicação
             </button>
           </div>
@@ -219,6 +224,8 @@ export class DraftsPage {
 
   protected selectedMedia = (d: Draft) => d.media.filter((m) => m.selected);
   protected pct = (v: number) => `${Math.round(v * 100)}%`;
+  protected providersOf = (d: Draft) =>
+    [...new Set(d.media.map((m) => m.provider))].map((p) => ({ label: PROVIDERS[p].label, site: PROVIDERS[p].site }));
 
   openGenerator(): void {
     this.generator.set(true);

@@ -78,7 +78,8 @@ export const config = {
   typesafeApiKey: env.TYPESAFE_API_KEY ?? '',
   jevModel: env.JEV_MODEL || 'jev-latest',
   jevBaseUrl: (env.JEV_BASE_URL || 'https://api.typesafe.ai').replace(/\/+$/, ''),
-  /** Banco de imagens para os posts gerados: Pixabay (preferido) ou Pexels. Sem chave, as sugestões de mídia ficam desligadas. */
+  /** Bancos de imagens para os posts gerados (Unsplash, Pixabay, Pexels; usa todos os que tiverem chave). Sem chave, as sugestões de mídia ficam desligadas. */
+  unsplashAccessKey: env.UNSPLASH_ACCESS_KEY ?? '',
   pixabayApiKey: env.PIXABAY_API_KEY ?? '',
   pexelsApiKey: env.PEXELS_API_KEY ?? '',
   // DATA_DIR/MEDIA_DIR permitem que os testes usem pastas temporárias.

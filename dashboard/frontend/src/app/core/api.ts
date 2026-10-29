@@ -251,7 +251,7 @@ export interface Draft {
 
 export interface StockItem {
   id: string;
-  provider: 'pixabay' | 'pexels';
+  provider: 'unsplash' | 'pixabay' | 'pexels';
   kind: 'photo' | 'video';
   description: string;
   thumb: string;
@@ -261,6 +261,8 @@ export interface StockItem {
   creditUrl: string;
   duration?: number;
   vertical?: boolean;
+  /** Unsplash: aviso obrigatório quando a foto é baixada para um post. */
+  track?: string;
   relevance?: number;
   selected?: boolean;
 }
@@ -293,7 +295,7 @@ export interface GenJob {
 export interface GenStatus {
   jev: boolean;
   stock: boolean;
-  /** Nome do banco de imagens configurado (Pixabay ou Pexels). */
+  /** Bancos de imagens configurados (ex.: "Unsplash, Pixabay"). */
   stockLabel: string | null;
   maxItems: number;
   target: number;
@@ -668,6 +670,10 @@ export class Api {
     return url.startsWith('/media/')
       ? firstValueFrom(this.http.get(url, { responseType: 'blob' }))
       : firstValueFrom(this.http.get('/api/stock/file', { params: { url }, responseType: 'blob' }));
+  }
+
+  trackStock(url: string) {
+    return firstValueFrom(this.http.post<void>('/api/stock/track', { url }));
   }
 
   jevStatus() {

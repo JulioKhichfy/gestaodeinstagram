@@ -87,4 +87,28 @@ describe('ClaudePanel', () => {
     expect(listOptions('Ideias:\n1) Um\n- Dois\ntexto solto')).toEqual(['Um', 'Dois']);
     expect(onlyHashtags('#decoração #casa\nPalavras-chave: sala')).toBe('#decoração #casa');
   });
+
+  it('cada botão guarda a sua resposta ao trocar de botão', async () => {
+    askClaude.mockResolvedValueOnce({ text: 'Legenda pronta' }).mockResolvedValueOnce({ text: '1. Gancho A' });
+    const fixture = setup({ artifacts: ['legenda', 'ganchos'] });
+    const el = fixture.nativeElement as HTMLElement;
+    const chip = (label: string) => Array.from(el.querySelectorAll<HTMLButtonElement>('.chip')).find((b) => b.textContent?.includes(label))!;
+
+    await fixture.componentInstance.ask();
+    fixture.detectChanges();
+    chip('Ganchos').click();
+    fixture.detectChanges();
+    expect(el.textContent).not.toContain('Legenda pronta');
+    expect(chip('Legenda').title).toContain('legenda completa');
+
+    await fixture.componentInstance.ask();
+    fixture.detectChanges();
+    chip('Legenda').click();
+    fixture.detectChanges();
+    expect(el.textContent).toContain('Legenda pronta');
+    chip('Ganchos').click();
+    fixture.detectChanges();
+    expect(el.textContent).toContain('Gancho A');
+  });
 });
+

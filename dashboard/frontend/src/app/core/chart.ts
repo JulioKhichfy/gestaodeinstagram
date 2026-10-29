@@ -85,7 +85,7 @@ export const axisStyle = (t: ChartTheme) => ({
           @if (subtitle()) { <small class="muted">{{ subtitle() }}</small> }
         </div>
         @if (table()) {
-          <button type="button" class="link-btn" (click)="showTable.set(!showTable())">
+          <button title="Mostra os mesmos números em tabela" type="button" class="link-btn" (click)="showTable.set(!showTable())">
             {{ showTable() ? 'Ver gráfico' : 'Ver tabela' }}
           </button>
         }

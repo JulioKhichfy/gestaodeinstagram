@@ -30,7 +30,7 @@ interface Row {
     <section class="gen">
       <header>
         <h2>Gerar posts</h2>
-        <button type="button" class="btn ghost" (click)="closed.emit()">Fechar</button>
+        <button title="Volta para os rascunhos (a geração continua no backend)" type="button" class="btn ghost" (click)="closed.emit()">Fechar</button>
       </header>
 
       @if (!job()) {
@@ -49,7 +49,7 @@ interface Row {
             <button type="button" class="btn ghost" (click)="remove(i)" [disabled]="rows().length === 1" aria-label="Remover este post">✕</button>
           </div>
         }
-        <button type="button" class="btn ghost add" (click)="add()" [disabled]="rows().length >= max()">＋ Adicionar outro post</button>
+        <button title="Mais um tema (até 10 por vez)" type="button" class="btn ghost add" (click)="add()" [disabled]="rows().length >= max()">＋ Adicionar outro post</button>
 
         <label class="check">
           <input type="checkbox" [checked]="rewrite()" [disabled]="!status()?.jev" (change)="rewrite.set($any($event.target).checked)" />
@@ -66,7 +66,7 @@ interface Row {
 
         @if (error()) { <p class="alert error">{{ error() }}</p> }
         <div class="actions">
-          <button type="button" class="btn primary" [disabled]="busy() || !ready()" (click)="start()">
+          <button title="Claude escreve, Jev avalia e guia a reescrita, banco de imagens sugere fotos; tudo vira rascunho" type="button" class="btn primary" [disabled]="busy() || !ready()" (click)="start()">
             @if (busy()) { <span class="spinner"></span> Enviando… } @else { Gerar {{ ready() }} post(s) }
           </button>
         </div>
@@ -85,7 +85,7 @@ interface Row {
                   @if (item.grades.length) { · nota do Jev: {{ item.grades.join(' → ') }} }
                 </span>
                 @if (item.draftId) {
-                  <button type="button" class="btn ghost" (click)="open.emit(item.draftId!)">Abrir rascunho</button>
+                  <button title="Abre o rascunho para revisar texto e mídias" type="button" class="btn ghost" (click)="open.emit(item.draftId!)">Abrir rascunho</button>
                 }
               </div>
               @if (item.error) { <small class="error-text">{{ item.error }}</small> }
@@ -96,7 +96,7 @@ interface Row {
         @if (error()) { <p class="alert error">{{ error() }}</p> }
         @if (job()!.done) {
           <div class="actions">
-            <button type="button" class="btn ghost" (click)="reset()">Gerar outros</button>
+            <button title="Começa uma nova lista de temas" type="button" class="btn ghost" (click)="reset()">Gerar outros</button>
           </div>
         } @else {
           <p class="muted small">Pode navegar pelo dashboard: a geração continua no backend. Cada post leva cerca de 30 s a 2 min.</p>

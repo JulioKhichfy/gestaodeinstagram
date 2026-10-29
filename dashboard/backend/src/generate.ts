@@ -196,8 +196,9 @@ function draftNotes(item: GenItem, written: Written, media: StockItem[]): string
   const chosen = media.filter((m) => m.selected);
   const credits = [...new Set(chosen.map((m) => m.credit))];
   if (credits.length) {
-    const source = PROVIDER_LABELS[chosen[0].provider];
-    parts.push(`Mídia: ${source} (${credits.join(', ')}). Crédito opcional na legenda: "Foto: ${credits[0]} / ${source}".`);
+    const sources = [...new Set(chosen.map((m) => PROVIDER_LABELS[m.provider]))].join(', ');
+    const first = chosen[0];
+    parts.push(`Mídia: ${sources} (${credits.join(', ')}). Crédito sugerido na legenda: "Foto: ${first.credit} / ${PROVIDER_LABELS[first.provider]}".`);
   }
   if (item.notes.length) parts.push(item.notes.map((n) => `Aviso: ${n}`).join('\n'));
   return parts.join('\n\n');
@@ -230,7 +231,7 @@ async function generateOne(db: DatabaseSync, deps: GenDeps, account: AccountConf
 
   let media: StockItem[] = [];
   if (job.media) {
-    if (!deps.stock) item.notes.push('Sem PIXABAY_API_KEY no .env: o rascunho ficou sem sugestões de foto/vídeo.');
+    if (!deps.stock) item.notes.push('Sem chave de banco de imagens no .env (UNSPLASH_ACCESS_KEY ou PIXABAY_API_KEY): o rascunho ficou sem sugestões de foto/vídeo.');
     else {
       item.step = 'midia';
       try {

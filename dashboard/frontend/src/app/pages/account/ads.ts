@@ -41,7 +41,7 @@ const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' 
                 <small class="muted">Score {{ fmt.dec(c.post.score) }} · alcance {{ fmt.num(c.post.reach) }} · {{ fmt.num(c.post.shares) }} compart. · {{ fmt.num(c.post.saved) }} salv.</small>
                 <ul>@for (r of c.reasons; track r) { <li>{{ r }}</li> }</ul>
                 <div class="actions">
-                  <button type="button" class="btn primary" (click)="plan(c.post)">Planejar</button>
+                  <button title="Monta um plano de impulsionamento para este post" type="button" class="btn primary" (click)="plan(c.post)">Planejar</button>
                   <a class="btn ghost" [href]="c.post.permalink" target="_blank" rel="noopener">Abrir para Turbinar ↗</a>
                 </div>
               </div>
@@ -72,7 +72,7 @@ const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' 
           <label class="field wide"><span>Anotações</span><textarea name="notes" rows="2" placeholder="Hipótese, criativo, link de destino…"></textarea></label>
           <div class="total wide">
             Investimento total previsto: <strong>{{ total() }}</strong>
-            <button class="btn primary" type="submit">Salvar plano</button>
+            <button title="Guarda o plano para comparar o resultado depois" class="btn primary" type="submit">Salvar plano</button>
           </div>
         </form>
 
@@ -99,7 +99,7 @@ const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' 
                   <td class="num"><input class="mini" type="number" min="0" [value]="p.result_reach ?? ''" (change)="update(p, { resultReach: numOrNull($any($event.target).value) })" /></td>
                   <td class="num"><input class="mini" type="number" min="0" [value]="p.result_actions ?? ''" (change)="update(p, { resultActions: numOrNull($any($event.target).value) })" title="Mensagens, cliques, vendas… o que o objetivo mede" /></td>
                   <td class="num">{{ costPer(p) }}</td>
-                  <td><button type="button" class="link-btn" (click)="remove(p)">excluir</button></td>
+                  <td><button title="Apaga este plano" type="button" class="link-btn" (click)="remove(p)">excluir</button></td>
                 </tr>
               } @empty { <tr><td colspan="9" class="muted">Nenhum plano ainda.</td></tr> }
             </tbody>

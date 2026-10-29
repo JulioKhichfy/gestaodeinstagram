@@ -15,16 +15,16 @@ import { SessionStore } from '../core/session';
         <strong>Guarda-chuva Instagram</strong>
       </a>
       <nav class="main-nav" aria-label="Principal">
-        <a routerLink="/visao-geral" routerLinkActive="active">Visão geral</a>
-        <a routerLink="/ajuda" routerLinkActive="active">Ajuda</a>
-        <a routerLink="/configuracoes" routerLinkActive="active">Configurações</a>
-        <button class="btn ghost" (click)="logout()">Sair</button>
+        <a title="Compara as contas lado a lado e mostra os alertas" routerLink="/visao-geral" routerLinkActive="active">Visão geral</a>
+        <a title="Explicações de cada função, métricas e dicas de algoritmo" routerLink="/ajuda" routerLinkActive="active">Ajuda</a>
+        <a title="Pesos do score e limites dos alertas" routerLink="/configuracoes" routerLinkActive="active">Configurações</a>
+        <button title="Sai do dashboard neste navegador" class="btn ghost" (click)="logout()">Sair</button>
       </nav>
     </header>
 
     <nav class="tabs" aria-label="Contas">
       @for (a of store.accounts(); track a.id) {
-        <a class="tab" [routerLink]="['/conta', a.id]" routerLinkActive="active">
+        <a class="tab" [routerLink]="['/conta', a.id]" routerLinkActive="active" [title]="'Abrir @' + a.username">
           <span class="dot" [class.on]="a.connected" [title]="a.connected ? 'Conectada' : 'Não conectada'"></span>
           <span class="tab-label">{{ a.label }}
             @if (alertCount(a.id); as n) {

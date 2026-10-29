@@ -16,7 +16,7 @@ import {
   type GenKind,
 } from './generate.ts';
 import { jevConfigured } from './jev.ts';
-import { PROVIDER_LABELS, STOCK_HOSTS, stockConfigured, stockProvider, type StockItem } from './stock.ts';
+import { PROVIDER_LABELS, STOCK_HOSTS, isUnsplashTrack, stockConfigured, stockProviders, trackUnsplash, type StockItem } from './stock.ts';
 
 class HttpError extends Error {
   constructor(
@@ -44,8 +44,8 @@ export function generateRoutes(deps: () => GenDeps = defaultDeps) {
   const r = express.Router();
 
   r.get('/generate/status', (_req, res) => {
-    const provider = stockProvider();
-    res.json({ jev: jevConfigured(), stock: stockConfigured(), stockLabel: provider ? PROVIDER_LABELS[provider] : null, maxItems: GENERATE_MAX_ITEMS, target: TARGET_GRADE, maxRewrites: MAX_REWRITES });
+    const labels = stockProviders().map((p) => PROVIDER_LABELS[p]);
+    res.json({ jev: jevConfigured(), stock: stockConfigured(), stockLabel: labels.length ? labels.join(', ') : null, maxItems: GENERATE_MAX_ITEMS, target: TARGET_GRADE, maxRewrites: MAX_REWRITES });
   });
 
   r.post(
@@ -105,7 +105,7 @@ export function generateRoutes(deps: () => GenDeps = defaultDeps) {
       } catch {
         throw new HttpError(400, 'Endereço inválido.');
       }
-      if (url.protocol !== 'https:' || !STOCK_HOSTS.has(url.hostname)) throw new HttpError(400, 'Só é possível baixar mídia do banco de imagens (Pixabay ou Pexels).');
+      if (url.protocol !== 'https:' || !STOCK_HOSTS.has(url.hostname)) throw new HttpError(400, 'Só é possível baixar mídia dos bancos de imagens (Unsplash, Pixabay ou Pexels).');
       const upstream = await fetch(url, { signal: AbortSignal.timeout(120_000) });
       const type = upstream.headers.get('content-type') ?? '';
       if (!upstream.ok || !upstream.body) throw new HttpError(502, `Banco de imagens: não consegui baixar a mídia (${upstream.status}).`);
@@ -115,6 +115,17 @@ export function generateRoutes(deps: () => GenDeps = defaultDeps) {
       res.setHeader('Content-Type', type);
       if (size) res.setHeader('Content-Length', String(size));
       Readable.fromWeb(upstream.body as import('node:stream/web').ReadableStream).pipe(res);
+    }),
+  );
+
+  /** Unsplash: avisa que a foto foi baixada para um post (regra da API deles). */
+  r.post(
+    '/stock/track',
+    handle(async (req, res) => {
+      const url = String(req.body?.url ?? '');
+      if (!isUnsplashTrack(url)) throw new HttpError(400, 'Endereço de aviso inválido.');
+      await trackUnsplash(url);
+      res.status(204).end();
     }),
   );
 

@@ -1,5 +1,9 @@
-// Fotos e vídeos de banco de imagens gratuito para ilustrar posts gerados. Dois provedores, ambos com licença que
-// permite uso comercial e API oficial (nada de buscar imagens soltas na internet: direito autoral).
+// Fotos e vídeos de banco de imagens gratuito para ilustrar posts gerados. Todos com licença que permite uso
+// comercial e API oficial (nada de buscar imagens soltas na internet: direito autoral). A busca usa todos os
+// provedores configurados e o Jev escolhe as melhores entre todas.
+//   Unsplash (UNSPLASH_ACCESS_KEY): https://unsplash.com/documentation (conferida em out/2026). Fotos de alta
+//     qualidade, sem vídeo. Exige usar os links do Unsplash (sem cópia), avisar o download (download_location)
+//     e dar crédito ao fotógrafo e ao Unsplash. Modo demo: 50 pedidos/hora.
 //   Pixabay (PIXABAY_API_KEY): https://pixabay.com/api/docs/ (conferida em out/2026). Proíbe usar os links das fotos
 //     de forma permanente: as fotos sugeridas são baixadas para media/stock no momento da geração. Vídeos podem ser
 //     usados pelo link. Pede para mostrar a origem. 100 pedidos/60 s.
@@ -8,8 +12,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { config } from './config.ts';
 
-export type StockProvider = 'pixabay' | 'pexels';
-export const PROVIDER_LABELS: Record<StockProvider, string> = { pixabay: 'Pixabay', pexels: 'Pexels' };
+export type StockProvider = 'unsplash' | 'pixabay' | 'pexels';
+export const PROVIDER_LABELS: Record<StockProvider, string> = { unsplash: 'Unsplash', pixabay: 'Pixabay', pexels: 'Pexels' };
+export const PROVIDER_SITES: Record<StockProvider, string> = {
+  unsplash: 'https://unsplash.com/?utm_source=gestao_instagram&utm_medium=referral',
+  pixabay: 'https://pixabay.com',
+  pexels: 'https://www.pexels.com',
+};
 
 export interface StockItem {
   /** Único entre provedores: 'pbp123'/'pbv123' (Pixabay), 'p123'/'v123' (Pexels). */
@@ -27,17 +36,22 @@ export interface StockItem {
   duration?: number;
   /** Vídeo vertical (bom para Reels); horizontais aparecem com faixas. */
   vertical?: boolean;
+  /** Unsplash: endereço que precisa ser avisado quando a foto é baixada para um post. */
+  track?: string;
   /** Probabilidade (0 a 1), dada pelo Jev, de a mídia combinar com o tema. */
   relevance?: number;
   selected?: boolean;
 }
 
-export const stockProvider = (): StockProvider | null =>
-  config.pixabayApiKey ? 'pixabay' : config.pexelsApiKey ? 'pexels' : null;
-export const stockConfigured = () => stockProvider() !== null;
+/** Provedores com chave no .env, do que tem fotos melhores para o mais genérico. */
+export const stockProviders = (): StockProvider[] =>
+  (['unsplash', 'pexels', 'pixabay'] as const).filter((p) =>
+    p === 'unsplash' ? config.unsplashAccessKey : p === 'pexels' ? config.pexelsApiKey : config.pixabayApiKey,
+  );
+export const stockConfigured = () => stockProviders().length > 0;
 
 /** Hosts de onde o backend aceita baixar mídia para o editor (evita virar proxy aberto). */
-export const STOCK_HOSTS = new Set(['images.pexels.com', 'videos.pexels.com', 'pixabay.com', 'cdn.pixabay.com']);
+export const STOCK_HOSTS = new Set(['images.unsplash.com', 'images.pexels.com', 'videos.pexels.com', 'pixabay.com', 'cdn.pixabay.com']);
 
 /** Fotos copiadas para o PC ficam em media/stock e são servidas em /media/stock/. */
 export const stockDir = () => path.join(config.mediaDir, 'stock');
@@ -71,6 +85,62 @@ function closestTo1080<T extends { width: number; height: number }>(files: T[]):
 }
 
 const reelsDuration = (s: number) => s >= MIN_REELS_SECONDS && s <= MAX_REELS_SECONDS;
+
+// ---------- Unsplash ----------
+
+interface UnsplashPhoto {
+  id: string;
+  description?: string | null;
+  alt_description?: string | null;
+  urls: { raw: string; small: string };
+  links: { html: string; download_location: string };
+  user: { name: string; links: { html: string } };
+}
+
+const utm = (url: string) => `${url}${url.includes('?') ? '&' : '?'}utm_source=gestao_instagram&utm_medium=referral`;
+
+export function mapUnsplash(p: UnsplashPhoto): StockItem {
+  return {
+    id: `us${p.id}`,
+    provider: 'unsplash',
+    kind: 'photo',
+    description: (p.alt_description || p.description || '').trim(),
+    thumb: p.urls.small,
+    // O raw aceita parâmetros de recorte; mantém o ixid que já vem nele. 1080x1350 = 4:5 do feed.
+    download: `${p.urls.raw}${p.urls.raw.includes('?') ? '&' : '?'}fm=jpg&fit=crop&crop=entropy&w=1080&h=1350&q=85`,
+    pageUrl: utm(p.links.html),
+    credit: p.user.name,
+    creditUrl: utm(p.user.links.html),
+    track: p.links.download_location,
+  };
+}
+
+async function searchUnsplash(query: string, perPage: number): Promise<StockItem[]> {
+  const params = new URLSearchParams({ query, orientation: 'portrait', per_page: String(perPage), content_filter: 'high' });
+  const r = await getJson<{ results: UnsplashPhoto[] }>(
+    `https://api.unsplash.com/search/photos?${params}`,
+    { headers: { Authorization: `Client-ID ${config.unsplashAccessKey}`, 'Accept-Version': 'v1' } },
+    'Unsplash',
+    'UNSPLASH_ACCESS_KEY',
+  );
+  return r.results.map(mapUnsplash);
+}
+
+/** Endereços de aviso de download aceitos (só a API do Unsplash). */
+export const isUnsplashTrack = (url: string) => {
+  try {
+    const u = new URL(url);
+    return u.protocol === 'https:' && u.hostname === 'api.unsplash.com' && /^\/photos\/[\w-]+\/download$/.test(u.pathname);
+  } catch {
+    return false;
+  }
+};
+
+/** O Unsplash pede um aviso cada vez que uma foto é baixada para uso (só contagem; não devolve a foto). */
+export async function trackUnsplash(url: string): Promise<void> {
+  if (!config.unsplashAccessKey || !isUnsplashTrack(url)) return;
+  await fetch(url, { headers: { Authorization: `Client-ID ${config.unsplashAccessKey}` }, signal: AbortSignal.timeout(10_000) }).catch(() => undefined);
+}
 
 // ---------- Pixabay ----------
 
@@ -217,15 +287,38 @@ async function searchPexels(kind: 'photo' | 'video', query: string, perPage: num
 
 // ---------- Busca e cópia local ----------
 
-/** Busca com vários termos e junta os resultados, sem repetir. Vídeos verticais vêm primeiro. */
+/**
+ * Busca com vários termos em todos os provedores configurados e junta os resultados, sem repetir.
+ * Um provedor com erro não derruba os outros. Vídeos verticais vêm primeiro.
+ */
 export async function searchStock(kind: 'photo' | 'video', queries: string[], perQuery = 8): Promise<StockItem[]> {
-  const provider = stockProvider();
-  if (!provider) throw new StockError('Sem chave de banco de imagens no backend/.env (PIXABAY_API_KEY): sugestões de foto/vídeo desligadas.');
-  const out = new Map<string, StockItem>();
-  for (const query of queries.slice(0, 3)) {
-    const found = provider === 'pixabay' ? await searchPixabay(kind, query, perQuery) : await searchPexels(kind, query, perQuery);
-    for (const item of found) out.set(item.id, item);
+  const providers = stockProviders().filter((p) => kind === 'photo' || p !== 'unsplash'); // Unsplash não tem vídeo
+  if (!providers.length) {
+    throw new StockError(
+      kind === 'video'
+        ? 'Nenhum banco de vídeos configurado (PIXABAY_API_KEY ou PEXELS_API_KEY).'
+        : 'Sem chave de banco de imagens no backend/.env (UNSPLASH_ACCESS_KEY ou PIXABAY_API_KEY): sugestões de foto/vídeo desligadas.',
+    );
   }
+  const out = new Map<string, StockItem>();
+  let lastError: Error | null = null;
+  for (const provider of providers) {
+    for (const query of queries.slice(0, 3)) {
+      try {
+        const found =
+          provider === 'unsplash'
+            ? await searchUnsplash(query, perQuery)
+            : provider === 'pixabay'
+              ? await searchPixabay(kind, query, perQuery)
+              : await searchPexels(kind, query, perQuery);
+        for (const item of found) out.set(item.id, item);
+      } catch (e) {
+        lastError = e as Error;
+        break; // chave errada ou limite: não adianta repetir neste provedor
+      }
+    }
+  }
+  if (!out.size && lastError) throw lastError;
   const items = [...out.values()];
   return kind === 'video' ? [...items.filter((i) => i.vertical), ...items.filter((i) => !i.vertical)] : items;
 }

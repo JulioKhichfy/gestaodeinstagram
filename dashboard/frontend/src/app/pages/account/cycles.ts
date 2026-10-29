@@ -23,7 +23,7 @@ const PHASES = [
         <label class="field"><span>Meta de posts</span><input name="posts" type="number" min="0" placeholder="4" /></label>
         <label class="field"><span>Meta de alcance</span><input name="reach" type="number" min="0" placeholder="5000" /></label>
         <label class="field"><span>Meta de seguidores</span><input name="followers" type="number" placeholder="+50" /></label>
-        <button class="btn primary" type="submit">Criar ciclo</button>
+        <button title="Começa um ciclo de 10 dias: pesquisa, testes e análise" class="btn primary" type="submit">Criar ciclo</button>
       </form>
     </section>
 
@@ -42,7 +42,7 @@ const PHASES = [
               }
             </small>
           </div>
-          <button type="button" class="btn ghost danger" (click)="remove(c)">Excluir</button>
+          <button title="Apaga este ciclo e a lista de tarefas dele" type="button" class="btn ghost danger" (click)="remove(c)">Excluir</button>
         </header>
 
         <div class="timeline" aria-label="Dias do ciclo">
@@ -70,7 +70,7 @@ const PHASES = [
             <form class="add-item" (submit)="addItem($event, c)">
               <select name="phase">@for (p of phases; track p.key) { <option [value]="p.key">{{ p.label }}</option> }</select>
               <input name="text" type="text" placeholder="Adicionar tarefa" />
-              <button class="btn ghost" type="submit">+</button>
+              <button title="Acrescenta esta tarefa à lista" class="btn ghost" type="submit">+</button>
             </form>
           </div>
 

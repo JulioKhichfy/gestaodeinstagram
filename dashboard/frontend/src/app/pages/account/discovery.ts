@@ -41,7 +41,7 @@ type Tab = 'resultados' | 'sugestoes' | 'salvos';
           <div class="row">
             <p>Conecte o <strong>Facebook</strong> que administra as Páginas vinculadas às suas contas do Instagram para buscar
               por hashtag e ver dados públicos de outros perfis.</p>
-            <button type="button" class="btn primary" [disabled]="busy()" (click)="connectFacebook()">Conectar Facebook</button>
+            <button title="Login do Facebook: libera a busca de perfis e hashtags" type="button" class="btn primary" [disabled]="busy()" (click)="connectFacebook()">Conectar Facebook</button>
           </div>
         } @else {
           <div class="row">
@@ -51,8 +51,8 @@ type Tab = 'resultados' | 'sugestoes' | 'salvos';
               @else { Nenhuma das suas contas apareceu vinculada a uma Página do Facebook. }
             </p>
             <span class="buttons">
-              <button type="button" class="btn ghost" [disabled]="busy()" (click)="connectFacebook()">Reconectar</button>
-              <button type="button" class="btn ghost danger" (click)="disconnectFacebook()">Desconectar</button>
+              <button title="Refaz o login do Facebook (acesso vence em ~60 dias)" type="button" class="btn ghost" [disabled]="busy()" (click)="connectFacebook()">Reconectar</button>
+              <button title="Remove o acesso do Facebook (as contas conectadas por ele também saem)" type="button" class="btn ghost danger" (click)="disconnectFacebook()">Desconectar</button>
             </span>
           </div>
           @if (f.missingPermissions.length) {
@@ -80,7 +80,7 @@ type Tab = 'resultados' | 'sugestoes' | 'salvos';
       <label class="field grow"><span>Buscar por palavra-chave</span>
         <input type="search" name="q" [value]="term()" (input)="term.set($any($event.target).value)"
           placeholder="Ex.: decoração afetiva, arquitetura de consultório" /></label>
-      <button class="btn primary" type="submit" [disabled]="!canSearch() || searching()">
+      <button title="Busca posts recentes e em alta desta hashtag (conta no limite de 30 por semana)" class="btn primary" type="submit" [disabled]="!canSearch() || searching()">
         {{ searching() ? 'Buscando…' : 'Buscar' }}</button>
       <small class="muted hint">
         @if (normalized()) { Vai consultar <strong>#{{ normalized() }}</strong>. }
@@ -91,9 +91,9 @@ type Tab = 'resultados' | 'sugestoes' | 'salvos';
 
     <div class="toolbar">
       <div class="segmented" role="tablist" aria-label="Listas">
-        <button type="button" role="tab" [attr.aria-selected]="tab() === 'resultados'" [class.active]="tab() === 'resultados'" (click)="tab.set('resultados')">Resultados</button>
-        <button type="button" role="tab" [attr.aria-selected]="tab() === 'sugestoes'" [class.active]="tab() === 'sugestoes'" (click)="openSuggestions()">Sugestões</button>
-        <button type="button" role="tab" [attr.aria-selected]="tab() === 'salvos'" [class.active]="tab() === 'salvos'" (click)="openSaved()">Lista salva ({{ saved().length }})</button>
+        <button title="Perfis encontrados na última busca" type="button" role="tab" [attr.aria-selected]="tab() === 'resultados'" [class.active]="tab() === 'resultados'" (click)="tab.set('resultados')">Resultados</button>
+        <button title="Perfis parecidos com a sua conta, pelas hashtags e menções dos seus melhores posts" type="button" role="tab" [attr.aria-selected]="tab() === 'sugestoes'" [class.active]="tab() === 'sugestoes'" (click)="openSuggestions()">Sugestões</button>
+        <button title="Perfis que você salvou ou marcou como referência" type="button" role="tab" [attr.aria-selected]="tab() === 'salvos'" [class.active]="tab() === 'salvos'" (click)="openSaved()">Lista salva ({{ saved().length }})</button>
       </div>
       <label class="field inline"><span>Seguidores</span>
         <select (change)="patchFilter({ followers: $any($event.target).value })">
@@ -153,13 +153,13 @@ type Tab = 'resultados' | 'sugestoes' | 'salvos';
           @if (s.ownHashtags.length) {
             <p class="small"><span class="muted">Suas hashtags de melhor desempenho (clique para buscar):</span>
               @for (h of s.ownHashtags; track h.hashtag) {
-                <button type="button" class="chip" (click)="search(h.hashtag)">#{{ h.hashtag }}</button>
+                <button title="Buscar de novo esta hashtag (não gasta o limite semanal)" type="button" class="chip" (click)="search(h.hashtag)">#{{ h.hashtag }}</button>
               }
             </p>
           }
           @if (s.pendingLookups) {
             <p class="muted small">Faltam {{ s.pendingLookups }} perfis para consultar (o dashboard consulta 15 por vez para respeitar o limite da Meta).
-              <button type="button" class="link-btn" (click)="openSuggestions(true)">Consultar mais</button></p>
+              <button title="Consulta mais perfis na Meta" type="button" class="link-btn" (click)="openSuggestions(true)">Consultar mais</button></p>
           }
           <div class="cards">
             @for (p of shown(s.profiles); track p.id) { <app-profile-card [profile]="p" (changed)="replace($event)" /> }
@@ -172,7 +172,7 @@ type Tab = 'resultados' | 'sugestoes' | 'salvos';
         <form class="watch" (submit)="addWatch($event)">
           <label class="field grow"><span>Cadastrar concorrente ou referência</span>
             <input name="username" type="text" placeholder="&#64;perfil ou link do Instagram" required /></label>
-          <button class="btn primary" type="submit">Adicionar</button>
+          <button title="Acompanha este perfil como referência ou concorrente" class="btn primary" type="submit">Adicionar</button>
         </form>
         <div class="cards">
           @for (p of shown(saved()); track p.id) { <app-profile-card [profile]="p" (changed)="replace($event)" /> }

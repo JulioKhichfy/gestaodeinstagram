@@ -14,10 +14,10 @@ import { compact, dateBR, dec, delta, num, pct, shortDay } from '../../core/form
       <h1>Visão geral das contas</h1>
       <div class="segmented" aria-label="Período">
         @for (p of periods; track p) {
-          <button type="button" [class.active]="days() === p" (click)="days.set(p)">{{ p }} dias</button>
+          <button title="Período comparado" type="button" [class.active]="days() === p" (click)="days.set(p)">{{ p }} dias</button>
         }
       </div>
-      <button type="button" class="btn ghost" [disabled]="store.anySyncing()" (click)="syncAll()">
+      <button title="Busca posts e métricas novas de todas as contas" type="button" class="btn ghost" [disabled]="store.anySyncing()" (click)="syncAll()">
         {{ store.anySyncing() ? 'Sincronizando…' : 'Sincronizar todas' }}
       </button>
     </div>

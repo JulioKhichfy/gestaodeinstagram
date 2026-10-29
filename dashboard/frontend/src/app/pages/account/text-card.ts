@@ -81,8 +81,8 @@ const FONTS = {
         }
 
         <div class="row end">
-          <button class="btn ghost" type="button" (click)="cancelled.emit()">Cancelar</button>
-          <button class="btn primary" type="button" [disabled]="!text().trim()" (click)="use()">
+          <button title="Fecha sem criar a imagem" class="btn ghost" type="button" (click)="cancelled.emit()">Cancelar</button>
+          <button title="Transforma o texto em imagem e adiciona ao post" class="btn primary" type="button" [disabled]="!text().trim()" (click)="use()">
             Adicionar ao post
           </button>
         </div>

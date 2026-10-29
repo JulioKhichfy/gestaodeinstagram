@@ -1,14 +1,14 @@
 <div class="toolbar">
   <div class="segmented" role="tablist">
-    <button type="button" role="tab" [class.active]="tab() === 'estrategico'" (click)="tab.set('estrategico')">Estratégico</button>
-    <button type="button" role="tab" [class.active]="tab() === 'operacional'" (click)="tab.set('operacional')">Operacional</button>
+    <button title="Visão de resultado: crescimento, alcance, formatos e público" type="button" role="tab" [class.active]="tab() === 'estrategico'" (click)="tab.set('estrategico')">Estratégico</button>
+    <button title="Dia a dia: frequência, melhores horários e alertas" type="button" role="tab" [class.active]="tab() === 'operacional'" (click)="tab.set('operacional')">Operacional</button>
   </div>
   <div class="segmented" aria-label="Período">
     @for (p of periods; track p) {
-      <button type="button" [class.active]="days() === p" (click)="days.set(p)">{{ p }} dias</button>
+      <button title="Período analisado" type="button" [class.active]="days() === p" (click)="days.set(p)">{{ p }} dias</button>
     }
   </div>
-  <button type="button" class="btn ghost" (click)="exportCsv()">Exportar CSV</button>
+  <button title="Baixa os posts do período para abrir no Excel ou Planilhas" type="button" class="btn ghost" (click)="exportCsv()">Exportar CSV</button>
 </div>
 
 @if (error()) { <p class="alert error">{{ error() }}</p> }
@@ -24,7 +24,7 @@
         <p class="muted">Reconecte a conta (botão no topo) para liberar a permissão de métricas.</p>
       } @else {
         <p class="muted">A primeira sincronização busca até 1 ano de posts e 28 dias de métricas diárias.</p>
-        <button type="button" class="btn primary" (click)="sync()">Sincronizar agora</button>
+        <button title="Busca agora posts e métricas novas no Instagram" type="button" class="btn primary" (click)="sync()">Sincronizar agora</button>
       }
     </div>
   }

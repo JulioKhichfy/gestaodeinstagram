@@ -26,13 +26,13 @@ export class AccountPage {
   readonly error = input<string>();
 
   protected readonly sections = [
-    { path: 'publicar', label: 'Publicar' },
-    { path: 'rascunhos', label: 'Rascunhos' },
-    { path: 'relatorios', label: 'Relatórios' },
-    { path: 'posts', label: 'Posts e experimentos' },
-    { path: 'ciclos', label: 'Ciclos de 10 dias' },
-    { path: 'trafego', label: 'Tráfego pago' },
-    { path: 'descoberta', label: 'Descoberta' },
+    { path: 'publicar', label: 'Publicar', help: 'Monta e publica post, carrossel ou Reels (com Claude e Jev ajudando na legenda)' },
+    { path: 'rascunhos', label: 'Rascunhos', help: 'Ideias e textos em preparo; "＋ Gerar posts" cria vários de uma vez com Claude + Jev' },
+    { path: 'relatorios', label: 'Relatórios', help: 'Crescimento, alcance, melhores formatos, público e horários' },
+    { path: 'posts', label: 'Posts e experimentos', help: 'Todos os posts com métricas; registre gancho e estilo para descobrir o que funciona' },
+    { path: 'ciclos', label: 'Ciclos de 10 dias', help: 'Método de pesquisa, testes e análise em 10 dias' },
+    { path: 'trafego', label: 'Tráfego pago', help: 'Quais posts impulsionar, com que público e orçamento' },
+    { path: 'descoberta', label: 'Descoberta', help: 'Encontre perfis do nicho, referências e concorrentes' },
   ];
 
   protected account = computed(() => this.store.byId(this.id()));
