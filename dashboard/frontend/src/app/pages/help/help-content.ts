@@ -303,6 +303,31 @@ export const HELP: HelpSection[] = [
     ],
   },
   {
+    id: 'filmes',
+    title: 'Central de Filmes',
+    intro:
+      'Contas com "hub": "filmes" ganham a aba Central de Filmes. Os menus (Filmes, Programas de TV, Prêmios e eventos, Celebridades, Assistir) são só o roteiro de temas: nada é lido nem copiado do IMDb, cujos termos proíbem robôs e uso comercial.',
+    items: [
+      {
+        q: 'Como usar?',
+        a: [
+          'Cada linha tem quantidade, formato (Post, Carrossel, Reels ou Story), menu e opção. A tela já abre com uma linha por formato: é só preencher as quantidades (até 20 posts por vez). O campo ao lado serve para o gênero ou para títulos que você queira.',
+          'O Claude escolhe os títulos de cada linha sem repetir. Nas opções com 📰 ele usa as manchetes atuais do Google Notícias; nas outras, o próprio conhecimento. Depois escreve cada post, o Jev revisa e tudo vira rascunho.',
+        ],
+      },
+      {
+        q: 'Regras dos textos',
+        a: [
+          '- Sem spoilers: só a premissa e por que vale assistir.',
+          '- Fatos de que o Claude não tem certeza saem com [CONFERIR]: cheque antes de publicar.',
+          '- Notícia sai com as próprias palavras e "Fonte: veículo".',
+          '- Limites: legenda até 1.500 caracteres (o Instagram aceita 2.200), slide até 220, tela de Story até 120. Se passar, o Claude encurta.',
+          'São só textos: monte as imagens com o card de texto do editor ou artes próprias.',
+        ],
+      },
+    ],
+  },
+  {
     id: 'radar',
     title: 'Radar e Raio-X (páginas de tema, como um clube)',
     intro:

@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, output, signal } from '@angular/core';
 import { Api, GenItem, GenJob, GenKind, GenStatus, GenStep, errorMessage } from '../../core/api';
 
-export const GEN_KIND_LABELS: Record<GenKind, string> = { image: 'Post estático', carousel: 'Carrossel', reel: 'Reels' };
+export const GEN_KIND_LABELS: Record<GenKind, string> = { image: 'Post estático', carousel: 'Carrossel', reel: 'Reels', story: 'Story' };
 
 export const STEP_LABELS: Record<GenStep, string> = {
   fila: 'Na fila',

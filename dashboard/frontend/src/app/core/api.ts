@@ -10,6 +10,8 @@ export interface Account {
   connected: boolean;
   tokenExpiresAt: number | null;
   business: 'livros' | 'servicos' | 'loja' | 'conteudo';
+  /** Central temática: "filmes" = Central de Filmes. */
+  hub?: 'filmes';
   /** Contas com Radar de assuntos (ex.: página de clube). */
   radar?: { topic: string; keywords: string[]; feeds: { name: string; url: string }[]; series?: string[] };
   /** Conexão já inclui a permissão de métricas (conexões da v1 precisam reconectar). */
@@ -271,7 +273,7 @@ export interface StockItem {
 
 // ---------- Gerador de posts ----------
 
-export type GenKind = 'image' | 'carousel' | 'reel';
+export type GenKind = 'image' | 'carousel' | 'reel' | 'story';
 export type GenStep = 'fila' | 'escrevendo' | 'revisando' | 'reescrevendo' | 'midia' | 'pronto' | 'erro';
 
 export interface GenItem {
@@ -288,6 +290,9 @@ export interface GenItem {
 export interface GenJob {
   id: string;
   accountId: string;
+  /** planejando = o Claude escolhendo os temas; gerando = escrevendo os posts. */
+  phase?: 'planejando' | 'gerando';
+  error?: string;
   rewrite: boolean;
   media: boolean;
   items: GenItem[];
@@ -348,6 +353,30 @@ export interface Pauta {
   theme: string;
   kind: GenKind;
   description: string;
+}
+
+// ---------- Central de Filmes ----------
+
+export interface HubOptionView {
+  id: string;
+  label: string;
+  /** Usa manchetes atuais (Google Notícias); senão, tema atemporal. */
+  current: boolean;
+  /** Rótulo do campo extra (ex.: gênero), quando a opção pede. */
+  extra?: string;
+}
+
+export interface MovieCatalog {
+  groups: { id: string; label: string; options: HubOptionView[] }[];
+  maxPosts: number;
+}
+
+export interface MovieRow {
+  group: string;
+  option: string;
+  kind: GenKind;
+  qty: number;
+  extra?: string;
 }
 
 // ---------- Captar clientes ----------
@@ -756,6 +785,13 @@ export class Api {
 
   trackStock(url: string) {
     return firstValueFrom(this.http.post<void>('/api/stock/track', { url }));
+  }
+
+  movieCatalog(id: string) {
+    return firstValueFrom(this.http.get<MovieCatalog>(`/api/accounts/${id}/filmes/catalogo`));
+  }
+  generateMovies(id: string, rows: MovieRow[], rewrite: boolean) {
+    return firstValueFrom(this.http.post<GenJob>(`/api/accounts/${id}/filmes/gerar`, { rows, rewrite }));
   }
 
   radar(id: string) {

@@ -11,7 +11,8 @@
     "label": "Cursos",
     "username": "cursos.exemplo",
     "folder": "dashboard/backend/test/fixtures/contas/cursos",
-    "business": "servicos"
+    "business": "servicos",
+    "hub": "filmes"
   },
   {
     "id": "loja",

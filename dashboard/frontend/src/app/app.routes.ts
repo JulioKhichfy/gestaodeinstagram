@@ -31,6 +31,7 @@ export const routes: Routes = [
           { path: 'descoberta', loadComponent: () => import('./pages/account/discovery').then((m) => m.DiscoveryPage) },
           { path: 'clientes', loadComponent: () => import('./pages/account/leads').then((m) => m.LeadsPage) },
           { path: 'radar', loadComponent: () => import('./pages/account/radar').then((m) => m.RadarPage) },
+          { path: 'filmes', loadComponent: () => import('./pages/account/movies').then((m) => m.MoviesPage) },
           { path: 'raio-x', loadComponent: () => import('./pages/account/raio-x').then((m) => m.RaioXPage) },
         ],
       },

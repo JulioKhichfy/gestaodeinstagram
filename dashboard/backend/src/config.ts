@@ -35,6 +35,8 @@ export interface AccountConfig {
   ads?: Partial<AdRecommendation>;
   /** Radar de assuntos quentes e Raio-X (opcional). */
   radar?: RadarConfig;
+  /** Central temática (opcional): "filmes" = Central de Filmes (menus de cinema e séries como roteiro de posts). */
+  hub?: 'filmes';
 }
 
 /** Raiz do projeto (onde ficam as pastas das contas). */
@@ -56,6 +58,7 @@ function loadAccounts(file: string): AccountConfig[] {
     if (!/^[a-z0-9-]{1,40}$/.test(a.id ?? '')) throw new Error(`${file}: id inválido "${a.id}" (use letras minúsculas, números e hífen).`);
     if (!a.username || !a.label || !a.folder) throw new Error(`${file}: a conta "${a.id}" precisa de label, username e folder.`);
     if (!BUSINESS_TYPES.includes(a.business)) throw new Error(`${file}: business da conta "${a.id}" deve ser ${BUSINESS_TYPES.join(', ')}.`);
+    if (a.hub !== undefined && a.hub !== 'filmes') throw new Error(`${file}: hub da conta "${a.id}" deve ser "filmes".`);
     if (a.radar) {
       const r = a.radar;
       if (!r.topic || !Array.isArray(r.keywords) || !Array.isArray(r.feeds) || !r.feeds.length)

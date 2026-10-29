@@ -16,9 +16,18 @@ export const MAX_REWRITES = 2;
 const CANDIDATES = 12;
 const CAROUSEL_MAX_PHOTOS = 10;
 
-export const GEN_KINDS = ['image', 'carousel', 'reel'] as const;
+export const GEN_KINDS = ['image', 'carousel', 'reel', 'story'] as const;
 export type GenKind = (typeof GEN_KINDS)[number];
-const KIND_LABELS: Record<GenKind, string> = { image: 'post estático (1 foto)', carousel: 'carrossel', reel: 'Reels' };
+const KIND_LABELS: Record<GenKind, string> = {
+  image: 'post estático (1 foto)',
+  carousel: 'carrossel',
+  reel: 'Reels',
+  story: 'Story (sequência de 1 a 3 telas verticais)',
+};
+
+/** Limites de texto: legenda do Instagram (2.200), texto de apoio do Story, slide e tela de Story. */
+export const TEXT_LIMITS = { caption: 2200, story: 300, slide: 220, storyFrame: 120 } as const;
+const captionLimit = (kind: GenKind) => (kind === 'story' ? TEXT_LIMITS.story : TEXT_LIMITS.caption);
 
 export type GenStep = 'fila' | 'escrevendo' | 'revisando' | 'reescrevendo' | 'midia' | 'pronto' | 'erro';
 
@@ -40,6 +49,10 @@ export interface GenItem {
 export interface GenJob {
   id: string;
   accountId: string;
+  /** planejando = escolhendo os temas (ex.: filmes); gerando = escrevendo os posts. */
+  phase?: 'planejando' | 'gerando';
+  /** Erro que impediu o trabalho de começar (ex.: planejamento falhou). */
+  error?: string;
   rewrite: boolean;
   media: boolean;
   items: GenItem[];
@@ -94,9 +107,25 @@ Responda SOMENTE com um objeto JSON válido, sem texto antes ou depois e sem blo
 {"titulo": "...", "legenda": "...", "slides": [], "roteiro": "", "busca_midia": []}
 
 - titulo: nome curto do post (até 60 caracteres), para a lista de rascunhos.
-- legenda: legenda completa e pronta para publicar: gancho forte na 1ª linha (aparece antes do "mais"), corpo de valor, chamada para ação clara no final e até 5 hashtags específicas.
-- slides: ${kind === 'carousel' ? 'de 5 a 10 textos curtos, um por slide (slide 1 = capa com gancho; último = chamada para ação).' : 'lista vazia [].'}
-- roteiro: ${kind === 'reel' ? 'roteiro de 15 a 45 segundos: GANCHO (0-3 s, falado e em texto na tela), cenas curtas com o que aparece e chamada para ação final.' : 'texto vazio "".'}
+- legenda: ${
+       kind === 'story'
+         ? `texto curto de apoio (até ${TEXT_LIMITS.story} caracteres), com chamada para ação; Story não tem legenda, este texto serve de base para as telas e para quem for postar.`
+         : 'legenda completa e pronta para publicar: gancho forte na 1ª linha (aparece antes do "mais"), corpo de valor, chamada para ação clara no final e até 5 hashtags específicas. No máximo 1.500 caracteres.'
+     }
+- slides: ${
+       kind === 'carousel'
+         ? `de 5 a 10 textos curtos, um por slide (até ${TEXT_LIMITS.slide} caracteres cada; slide 1 = capa com gancho; último = chamada para ação).`
+         : kind === 'story'
+           ? `de 1 a 3 textos para as telas do Story (até ${TEXT_LIMITS.storyFrame} caracteres cada; 1ª tela = gancho).`
+           : 'lista vazia [].'
+     }
+- roteiro: ${
+       kind === 'reel'
+         ? 'roteiro de 15 a 45 segundos: GANCHO (0-3 s, falado e em texto na tela), cenas curtas com o que aparece e chamada para ação final.'
+         : kind === 'story'
+           ? 'sugestão de figurinha interativa (enquete, pergunta, teste ou contagem regressiva) e do fundo de cada tela.'
+           : 'texto vazio "".'
+     }
 - busca_midia: 2 ou 3 buscas curtas EM INGLÊS para achar ${kind === 'reel' ? 'vídeos verticais' : 'fotos'} num banco de imagens que ilustrem o tema (cenas e objetos concretos; sem pessoas famosas, marcas ou texto).`;
 }
 
@@ -196,8 +225,9 @@ function selectMedia(kind: GenKind, candidates: StockItem[], slides: number): St
 function draftNotes(item: GenItem, written: Written, media: StockItem[]): string {
   const parts = [`Tema: ${item.theme}`];
   if (item.grades.length) parts.push(`Nota do Jev: ${item.grades.join(' → ')}${item.grades.length > 1 ? ' (ficou a melhor versão)' : ''}`);
-  if (written.slides.length) parts.push(`Textos dos slides:\n${written.slides.map((s, i) => `${i + 1}. ${s}`).join('\n')}`);
-  if (written.script) parts.push(`Roteiro do Reels:\n${written.script}`);
+  const story = item.kind === 'story';
+  if (written.slides.length) parts.push(`${story ? 'Telas do Story' : 'Textos dos slides'}:\n${written.slides.map((s, i) => `${i + 1}. ${s}`).join('\n')}`);
+  if (written.script) parts.push(`${story ? 'Figurinhas e fundos do Story' : 'Roteiro do Reels'}:\n${written.script}`);
   const chosen = media.filter((m) => m.selected);
   const credits = [...new Set(chosen.map((m) => m.credit))];
   if (credits.length) {
@@ -214,6 +244,9 @@ async function generateOne(db: DatabaseSync, deps: GenDeps, account: AccountConf
   item.step = 'escrevendo';
   const written = parseWritten(await deps.claude(system, writePrompt(item.theme, item.kind, item.brief)), item.theme);
   item.title = written.title;
+  written.caption = await fitCaption(deps, system, item, written.caption);
+  const frameMax = item.kind === 'story' ? TEXT_LIMITS.storyFrame : TEXT_LIMITS.slide;
+  if (written.slides.some((s) => s.length > frameMax)) item.notes.push(`Algum texto de ${item.kind === 'story' ? 'tela' : 'slide'} passa de ${frameMax} caracteres: encurte antes de montar.`);
 
   let best: { caption: string; review: CaptionReview | null } = { caption: written.caption, review: null };
   if (deps.jev) {
@@ -223,7 +256,7 @@ async function generateOne(db: DatabaseSync, deps: GenDeps, account: AccountConf
       item.grades.push(best.review.grade);
       for (let round = 0; job.rewrite && round < MAX_REWRITES && best.review!.grade < TARGET_GRADE; round++) {
         item.step = 'reescrevendo';
-        const caption = cleanCaption(await deps.claude(system, rewritePrompt(item.theme, best.caption, best.review!)));
+        const caption = await fitCaption(deps, system, item, cleanCaption(await deps.claude(system, rewritePrompt(item.theme, best.caption, best.review!))));
         item.step = 'revisando';
         const review = await reviewCaption(db, deps.jev, account, { caption, kind: item.kind });
         item.grades.push(review.grade);
@@ -280,36 +313,86 @@ async function generateOne(db: DatabaseSync, deps: GenDeps, account: AccountConf
   item.step = 'pronto';
 }
 
-/** Cria o trabalho e roda em segundo plano (um post de cada vez). */
-export function startGeneration(
-  db: DatabaseSync,
-  account: AccountConfig,
-  requests: { theme: string; kind: GenKind; brief?: string }[],
-  opts: { rewrite: boolean; media: boolean },
-  deps: GenDeps = defaultDeps(),
-): GenJob {
+/** Texto acima do limite: o Claude encurta (uma vez); se ainda passar, fica o aviso no rascunho. */
+async function fitCaption(deps: GenDeps, system: string, item: GenItem, caption: string): Promise<string> {
+  const max = captionLimit(item.kind);
+  if (caption.length <= max) return caption;
+  const target = item.kind === 'story' ? max : 1500;
+  const shorter = cleanCaption(
+    await deps.claude(system, `# Tarefa\nEncurte o texto abaixo para no máximo ${target} caracteres, mantendo o gancho, a ideia principal e a chamada para ação. Devolva só o texto.\n\n# Texto\n${caption}`),
+  );
+  if (shorter.length > max) item.notes.push(`O texto ainda passa de ${max} caracteres: encurte antes de publicar.`);
+  return shorter;
+}
+
+type GenRequest = { theme: string; kind: GenKind; brief?: string };
+
+function newJob(accountId: string, opts: { rewrite: boolean; media: boolean }, requests: GenRequest[], phase: GenJob['phase']): GenJob {
   for (const [id, j] of jobs) if (j.done && Date.now() - j.createdAt > 60 * 60 * 1000) jobs.delete(id);
   const job: GenJob = {
     id: crypto.randomUUID(),
-    accountId: account.id,
+    accountId,
     ...opts,
+    phase,
     items: requests.map((r) => ({ ...r, step: 'fila', grades: [], notes: [] })),
     done: false,
     createdAt: Date.now(),
   };
   jobs.set(job.id, job);
+  return job;
+}
+
+/** Cria o trabalho e roda em segundo plano (um post de cada vez). */
+export function startGeneration(
+  db: DatabaseSync,
+  account: AccountConfig,
+  requests: GenRequest[],
+  opts: { rewrite: boolean; media: boolean },
+  deps: GenDeps = defaultDeps(),
+): GenJob {
+  const job = newJob(account.id, opts, requests, 'gerando');
+  pending.set(job.id, runItems(db, deps, account, job));
+  return job;
+}
+
+/**
+ * Primeiro planeja (ex.: o Claude escolhe os filmes de cada pedido), depois gera. Responde na hora;
+ * `phase` mostra em que etapa está e `error` explica se o planejamento falhar.
+ */
+export function startPlannedGeneration(
+  db: DatabaseSync,
+  account: AccountConfig,
+  plan: () => Promise<GenRequest[]>,
+  opts: { rewrite: boolean; media: boolean },
+  deps: GenDeps = defaultDeps(),
+): GenJob {
+  const job = newJob(account.id, opts, [], 'planejando');
   const run = (async () => {
-    for (const item of job.items) {
-      try {
-        await generateOne(db, deps, account, job, item);
-      } catch (e) {
-        item.step = 'erro';
-        item.error = (e as Error).message;
-      }
+    try {
+      const requests = await plan();
+      job.items = requests.map((r) => ({ ...r, step: 'fila', grades: [], notes: [] }));
+      job.phase = 'gerando';
+    } catch (e) {
+      job.error = (e as Error).message;
+      job.done = true;
+      pending.delete(job.id);
+      return;
     }
-    job.done = true;
-    pending.delete(job.id);
+    await runItems(db, deps, account, job);
   })();
   pending.set(job.id, run);
   return job;
+}
+
+async function runItems(db: DatabaseSync, deps: GenDeps, account: AccountConfig, job: GenJob): Promise<void> {
+  for (const item of job.items) {
+    try {
+      await generateOne(db, deps, account, job, item);
+    } catch (e) {
+      item.step = 'erro';
+      item.error = (e as Error).message;
+    }
+  }
+  job.done = true;
+  pending.delete(job.id);
 }

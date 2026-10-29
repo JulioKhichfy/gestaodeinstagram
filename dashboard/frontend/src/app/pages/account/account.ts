@@ -25,7 +25,8 @@ export class AccountPage {
   readonly connected = input<string>();
   readonly error = input<string>();
 
-  private readonly allSections: { path: string; label: string; help: string; radar?: boolean }[] = [
+  private readonly allSections: { path: string; label: string; help: string; radar?: boolean; hub?: boolean }[] = [
+    { path: 'filmes', label: 'Central de Filmes', help: 'Escolha menus de cinema e séries, formatos e quantidades: o Claude escolhe os títulos e escreve, o Jev revisa', hub: true },
     { path: 'radar', label: 'Radar', help: 'Notícias quentes do tema, das fontes configuradas, com um clique para virar post', radar: true },
     { path: 'raio-x', label: 'Raio-X', help: 'Séries de conteúdo histórico: o Claude sugere pautas e o gerador cria os posts', radar: true },
     { path: 'publicar', label: 'Publicar', help: 'Monta e publica post, carrossel ou Reels (com Claude e Jev ajudando na legenda)' },
@@ -39,7 +40,9 @@ export class AccountPage {
   ];
 
   protected account = computed(() => this.store.byId(this.id()));
-  protected sections = computed(() => this.allSections.filter((s) => !s.radar || !!this.account()?.radar));
+  protected sections = computed(() =>
+    this.allSections.filter((s) => (!s.radar || !!this.account()?.radar) && (!s.hub || this.account()?.hub === 'filmes')),
+  );
   protected overview = signal<Overview | null>(null);
   protected loading = signal(false);
   protected banner = signal<{ kind: 'ok' | 'error' | 'info'; text: string } | null>(null);
