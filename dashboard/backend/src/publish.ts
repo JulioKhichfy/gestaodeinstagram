@@ -3,7 +3,7 @@ import path from 'node:path';
 import { config } from './config.ts';
 import * as ig from './instagram.ts';
 
-export type PostType = 'image' | 'carousel' | 'reel';
+export type PostType = 'image' | 'carousel' | 'reel' | 'story';
 
 export interface PublishRequest {
   type: PostType;
@@ -36,7 +36,7 @@ function mediaExists(file: string): boolean {
 
 /** Retorna a mensagem de erro, ou null se o pedido é válido. */
 export function validate(req: PublishRequest): string | null {
-  if (!['image', 'carousel', 'reel'].includes(req.type)) return 'Tipo de post inválido.';
+  if (!['image', 'carousel', 'reel', 'story'].includes(req.type)) return 'Tipo de post inválido.';
   const caption = req.caption ?? '';
   if (caption.length > CAPTION_MAX) return `A legenda passa de ${CAPTION_MAX} caracteres.`;
   if ((caption.match(/#[\p{L}\p{N}_]+/gu) ?? []).length > HASHTAG_MAX) return `Máximo de ${HASHTAG_MAX} hashtags.`;
@@ -53,6 +53,9 @@ export function validate(req: PublishRequest): string | null {
   if (req.type === 'reel') {
     if (items.length !== 1 || !isVideo(items[0])) return 'Reels precisa de exatamente 1 vídeo MP4 ou MOV.';
     if (req.coverItem && (!mediaExists(req.coverItem) || !isImage(req.coverItem))) return 'Capa do Reels deve ser JPEG.';
+  }
+  if (req.type === 'story') {
+    if (items.length !== 1 || !(isImage(items[0]) || isVideo(items[0]))) return 'Story precisa de exatamente 1 imagem JPEG ou 1 vídeo MP4/MOV.';
   }
   return null;
 }
@@ -78,6 +81,14 @@ export async function publish(igUserId: string, auth: ig.Auth, req: PublishReque
       children: children.join(','),
       caption,
     }));
+    await ig.waitUntilReady(containerId, auth);
+  } else if (req.type === 'story') {
+    // Story não tem legenda pela API: o texto vai na própria imagem (card de texto).
+    const file = req.items[0];
+    const params: Record<string, string> = isVideo(file)
+      ? { media_type: 'STORIES', video_url: publicUrl(file) }
+      : { media_type: 'STORIES', image_url: publicUrl(file) };
+    ({ id: containerId } = await ig.createContainer(igUserId, auth, params));
     await ig.waitUntilReady(containerId, auth);
   } else {
     const params: Record<string, string> = {

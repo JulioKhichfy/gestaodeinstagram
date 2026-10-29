@@ -130,8 +130,8 @@ const PROVIDERS: Record<StockItem['provider'], { label: string; site: string }> 
           </label>
           <div class="row end">
             <small class="muted">{{ saved() }}</small>
-            <button type="button" class="btn primary" (click)="toPublish(d)" [disabled]="d.kind === 'story'"
-                    [title]="d.kind === 'story' ? 'Stories ainda não são publicados pelo dashboard' : 'Abre o editor de publicação com o texto e as mídias escolhidas (você confere antes de publicar)'">
+            <button type="button" class="btn primary" (click)="toPublish(d)"
+                    title="Abre o editor de publicação com o texto e as mídias escolhidas (você confere antes de publicar ou agendar)">
               Levar para publicação
             </button>
           </div>

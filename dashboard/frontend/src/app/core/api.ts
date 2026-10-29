@@ -59,7 +59,7 @@ export interface ServerConfig {
   publicBaseUrl: string;
 }
 
-export type PostType = 'image' | 'carousel' | 'reel';
+export type PostType = 'image' | 'carousel' | 'reel' | 'story';
 
 export interface PublishRequest {
   type: PostType;
@@ -355,6 +355,24 @@ export interface Pauta {
   description: string;
 }
 
+// ---------- Agenda ----------
+
+export type ScheduleStatus = 'agendado' | 'publicando' | 'publicado' | 'falhou' | 'cancelado';
+
+export interface ScheduledPost {
+  id: number;
+  accountId: string;
+  type: PostType;
+  caption: string;
+  items: number;
+  scheduledAt: number;
+  status: ScheduleStatus;
+  draftId: number | null;
+  error: string | null;
+  permalink: string | null;
+  publishedAt: number | null;
+}
+
 // ---------- Central de Filmes ----------
 
 export interface HubOptionView {
@@ -635,6 +653,22 @@ export class Api {
   deleteUpload(file: string) {
     return firstValueFrom(this.http.delete<void>(`/api/media/${encodeURIComponent(file)}`));
   }
+  schedule(id: string, body: { request: PublishRequest; at: number; draftId?: number }) {
+    return firstValueFrom(this.http.post<ScheduledPost>(`/api/accounts/${id}/schedule`, body));
+  }
+  scheduleList(id: string) {
+    return firstValueFrom(this.http.get<ScheduledPost[]>(`/api/accounts/${id}/schedule`));
+  }
+  reschedule(sid: number, at: number) {
+    return firstValueFrom(this.http.patch<ScheduledPost>(`/api/schedule/${sid}`, { at }));
+  }
+  cancelScheduled(sid: number) {
+    return firstValueFrom(this.http.delete<ScheduledPost>(`/api/schedule/${sid}`));
+  }
+  publishScheduled(sid: number) {
+    return firstValueFrom(this.http.post<ScheduledPost>(`/api/schedule/${sid}/publish`, {}));
+  }
+
   publish(id: string, req: PublishRequest) {
     return firstValueFrom(
       this.http.post<{ id: string; permalink?: string }>(`/api/accounts/${id}/publish`, req),

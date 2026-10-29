@@ -6,6 +6,7 @@ import { connectionToken, encrypt, read, write } from './store.ts';
 import { db } from './db.ts';
 import { jevClient, jevConfigured } from './jev.ts';
 import { refreshRadar } from './radar.ts';
+import { publishFor, recoverStuck, runDue } from './schedule.ts';
 import { syncAll } from './sync.ts';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -42,6 +43,20 @@ function radarTick(): void {
   }
 }
 
+// Agenda: a cada minuto publica o que venceu (precisa do túnel ligado no horário).
+let scheduling = false;
+async function scheduleTick(): Promise<void> {
+  if (scheduling) return;
+  scheduling = true;
+  try {
+    await runDue(db, (accountId, req) => publishFor(db, accountId, req));
+  } catch (e) {
+    console.error('agenda:', (e as Error).message);
+  } finally {
+    scheduling = false;
+  }
+}
+
 // A cada 6h: renova tokens e sincroniza métricas de todas as contas.
 async function housekeeping(): Promise<void> {
   await refreshTokens();
@@ -58,5 +73,7 @@ app.listen(config.port, () => {
   housekeeping().catch((e) => console.error('housekeeping:', e));
   radarTick();
   setInterval(radarTick, RADAR_EVERY);
+  recoverStuck(db);
+  setInterval(scheduleTick, 60 * 1000);
   setInterval(() => housekeeping().catch((e) => console.error('housekeeping:', e)), 6 * 60 * 60 * 1000);
 });

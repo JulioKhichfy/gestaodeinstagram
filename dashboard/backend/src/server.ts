@@ -7,13 +7,15 @@ import * as auth from './auth.ts';
 import { ACCOUNTS, config, findAccount, missingConfig, publishMissing, redirectUri, setupMissing } from './config.ts';
 import * as ig from './instagram.ts';
 import { db } from './db.ts';
-import { publish, validate, type PublishRequest } from './publish.ts';
+import type { PublishRequest } from './publish.ts';
 import { discovery, facebookCallback } from './routes-discovery.ts';
 import { generateRoutes } from './routes-generate.ts';
 import { jevRoutes } from './routes-jev.ts';
 import { leadsRoutes } from './routes-leads.ts';
 import { movieRoutes } from './routes-movies.ts';
 import { radarRoutes } from './routes-radar.ts';
+import { scheduleRoutes } from './routes-schedule.ts';
+import { PublishError, publishFor } from './schedule.ts';
 import { v2 } from './routes-v2.ts';
 import { isSyncing, syncAccount } from './sync.ts';
 import { connectionAuth, encrypt, read, write } from './store.ts';
@@ -256,25 +258,11 @@ api.post(
   '/accounts/:id/publish',
   auth.requireSession,
   handle(async (req, res) => {
-    const conn = connected(req, res);
-    if (!conn) return;
-    const noPublicUrl = publishMissing();
-    if (noPublicUrl) return void res.status(400).json({ error: `Para publicar, o Instagram precisa baixar a mídia de um endereço público. Configure no backend/.env: ${noPublicUrl}.` });
-    const body = req.body as PublishRequest;
-    const invalid = validate(body);
-    if (invalid) return void res.status(400).json({ error: invalid });
-    const log = db.prepare(
-      `INSERT INTO publish_log(account_id, type, caption, trial, ok, error, media_id, permalink, created_at)
-       VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    );
-    const accountId = req.params.id as string;
-    const caption = (body.caption ?? '').slice(0, 300);
+    if (!findAccount(req.params.id as string)) return void res.status(404).json({ error: 'Conta desconhecida.' });
     try {
-      const result = await publish(conn.igUserId, conn.auth, body);
-      log.run(accountId, body.type, caption, body.trial ? 1 : 0, 1, null, result.id, result.permalink ?? null, Date.now());
-      res.json(result);
+      res.json(await publishFor(db, req.params.id as string, req.body as PublishRequest));
     } catch (e) {
-      log.run(accountId, body.type, caption, body.trial ? 1 : 0, 0, (e as Error).message, null, null, Date.now());
+      if (e instanceof PublishError) return void res.status(e.status).json({ error: e.message });
       throw e;
     }
   }),
@@ -288,6 +276,7 @@ api.use(auth.requireSession, generateRoutes());
 api.use(auth.requireSession, leadsRoutes());
 api.use(auth.requireSession, radarRoutes());
 api.use(auth.requireSession, movieRoutes());
+api.use(auth.requireSession, scheduleRoutes());
 
 // Rotas da versão 2 (relatórios, experimentos, ciclos, rascunhos, Claude, tráfego pago).
 api.use(auth.requireSession, v2);

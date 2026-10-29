@@ -259,6 +259,24 @@ const MIGRATIONS: string[] = [
   );
   CREATE INDEX radar_account_pub ON radar_items(account_id, published_at);
   `,
+  // Agenda: publicações marcadas para um horário (a mídia já fica enviada em media/).
+  `
+  CREATE TABLE scheduled_posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id TEXT NOT NULL,
+    request TEXT NOT NULL,           -- PublishRequest (JSON)
+    scheduled_at INTEGER NOT NULL,   -- ms
+    status TEXT NOT NULL DEFAULT 'agendado',  -- agendado | publicando | publicado | falhou | cancelado
+    draft_id INTEGER,
+    error TEXT,
+    media_id TEXT,
+    permalink TEXT,
+    published_at INTEGER,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+  CREATE INDEX scheduled_due ON scheduled_posts(status, scheduled_at);
+  `,
 ];
 
 export function openDb(file: string): DatabaseSync {

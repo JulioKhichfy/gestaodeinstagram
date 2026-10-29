@@ -303,6 +303,33 @@ export const HELP: HelpSection[] = [
     ],
   },
   {
+    id: 'agenda',
+    title: 'Agendar posts e Stories',
+    intro:
+      'No editor de publicação, escolha a data e a hora em "Agendar para" e clique em Agendar. A mídia é enviada na hora e o dashboard publica sozinho no horário. Acompanhe na aba Agendados.',
+    items: [
+      {
+        q: 'O que precisa estar ligado no horário?',
+        a: [
+          'O dashboard (npm run dev) e o túnel (cloudflared). A Meta baixa a foto ou o vídeo do endereço público do seu PC no momento da publicação.',
+          'Se o túnel estiver desligado, o agendamento fica como "Falhou", com o motivo; abra o túnel e clique em "Publicar agora". O dashboard não tenta de novo sozinho, para não publicar fora de hora.',
+          'Lembre: o endereço do túnel rápido muda a cada vez que ele abre. Atualize o PUBLIC_BASE_URL e reinicie antes dos horários marcados. Num servidor (VPS), isso deixa de ser preocupação.',
+        ],
+      },
+      {
+        q: 'Como publicar um Story?',
+        a: [
+          'No editor, aba Story: 1 imagem ou 1 vídeo vertical 9:16 (vídeo até 60 s). Story não tem legenda pela API: o texto vai na própria imagem. Use "Criar card de texto" no formato Story 9:16.',
+          'Enquetes, perguntas e outras figurinhas não podem ser colocadas pela API: para usá-las, publique o Story pelo app do Instagram (o rascunho gerado traz a sugestão).',
+        ],
+      },
+      {
+        q: 'Posso mudar ou cancelar?',
+        a: ['Na aba Agendados: Reagendar muda a data e hora; Cancelar desiste e apaga a mídia enviada; Publicar agora publica na hora. O que já foi publicado aparece no histórico com o link.'],
+      },
+    ],
+  },
+  {
     id: 'filmes',
     title: 'Central de Filmes',
     intro:

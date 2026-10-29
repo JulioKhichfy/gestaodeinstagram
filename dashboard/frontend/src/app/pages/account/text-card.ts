@@ -3,17 +3,20 @@ import {
   Component,
   ElementRef,
   effect,
+  input,
   output,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { canvasToJpeg } from '../../core/media-files';
 
-type Format = 'portrait' | 'square';
+type Format = 'portrait' | 'square' | 'story';
 
 const SIZES: Record<Format, { w: number; h: number }> = {
   portrait: { w: 1080, h: 1350 },
   square: { w: 1080, h: 1080 },
+  story: { w: 1080, h: 1920 },
 };
 
 const FONTS = {
@@ -72,6 +75,7 @@ const FONTS = {
             <select [value]="format()" (change)="format.set($any($event.target).value)">
               <option value="portrait">Retrato 4:5</option>
               <option value="square">Quadrado 1:1</option>
+              <option value="story">Story 9:16</option>
             </select>
           </label>
         </div>
@@ -110,12 +114,18 @@ export class TextCard {
   protected fontSize = signal(64);
   protected font = signal<keyof typeof FONTS>('serif');
   protected align = signal<'center' | 'left'>('center');
+  /** Formato inicial (o editor passa "story" quando o post é um Story). */
+  readonly initialFormat = input<Format>('portrait');
   protected format = signal<Format>('portrait');
   protected overflow = signal(false);
 
   private canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
 
   constructor() {
+    effect(() => {
+      const initial = this.initialFormat();
+      untracked(() => this.format.set(initial));
+    });
     effect(() => this.draw());
   }
 

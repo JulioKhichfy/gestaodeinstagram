@@ -30,6 +30,7 @@ export class AccountPage {
     { path: 'radar', label: 'Radar', help: 'Notícias quentes do tema, das fontes configuradas, com um clique para virar post', radar: true },
     { path: 'raio-x', label: 'Raio-X', help: 'Séries de conteúdo histórico: o Claude sugere pautas e o gerador cria os posts', radar: true },
     { path: 'publicar', label: 'Publicar', help: 'Monta e publica post, carrossel ou Reels (com Claude e Jev ajudando na legenda)' },
+    { path: 'agenda', label: 'Agendados', help: 'O que vai ser publicado e quando; reagendar, publicar agora ou cancelar' },
     { path: 'rascunhos', label: 'Rascunhos', help: 'Ideias e textos em preparo; "＋ Gerar posts" cria vários de uma vez com Claude + Jev' },
     { path: 'relatorios', label: 'Relatórios', help: 'Crescimento, alcance, melhores formatos, público e horários' },
     { path: 'posts', label: 'Posts e experimentos', help: 'Todos os posts com métricas; registre gancho e estilo para descobrir o que funciona' },

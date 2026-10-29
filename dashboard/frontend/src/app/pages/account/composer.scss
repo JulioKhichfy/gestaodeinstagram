@@ -47,5 +47,7 @@ h2 { margin: 0; font-size: 1.1rem; }
 .counters { color: var(--muted); text-align: right; margin-top: -8px;
   &.over { color: var(--error-text); font-weight: 600; } }
 
-.actions { display: flex; justify-content: flex-end; gap: 12px; }
+.actions { display: flex; justify-content: flex-end; align-items: end; gap: 12px; flex-wrap: wrap; }
+.actions .spacer { flex: 1; }
+.schedule { display: grid; gap: 2px; }
 .audio { min-width: 220px; flex: 1; }

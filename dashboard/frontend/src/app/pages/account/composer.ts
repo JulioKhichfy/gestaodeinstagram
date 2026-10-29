@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
-import { Api, Artifact, Draft, PostType, errorMessage } from '../../core/api';
+import { Api, Artifact, Draft, PostType, PublishRequest, errorMessage } from '../../core/api';
 import { JevReview } from '../../shared/jev-review';
 import {
   CAPTION_MAX,
@@ -17,12 +17,19 @@ import {
 import { ClaudePanel, ClaudeUse, applyClaudeText } from '../../shared/claude-panel';
 import { TextCard } from './text-card';
 
-type Status = 'idle' | 'working' | 'done' | 'error';
+type Status = 'idle' | 'working' | 'done' | 'scheduled' | 'error';
+
+/** Valor para <input type="datetime-local"> no fuso do PC. */
+const localInput = (ms: number) => {
+  const d = new Date(ms - new Date(ms).getTimezoneOffset() * 60_000);
+  return d.toISOString().slice(0, 16);
+};
 
 const ACCEPT: Record<PostType, string> = {
   image: 'image/*',
   carousel: 'image/*,video/mp4,video/quicktime,.mov',
   reel: 'video/mp4,video/quicktime,.mp4,.mov',
+  story: 'image/*,video/mp4,video/quicktime,.mov',
 };
 
 @Component({
@@ -91,7 +98,7 @@ const ACCEPT: Record<PostType, string> = {
 
       @if (showTextCard()) {
         <div class="subcard">
-          <app-text-card (created)="addGenerated($event)" (cancelled)="showTextCard.set(false)" />
+          <app-text-card [initialFormat]="type() === 'story' ? 'story' : 'portrait'" (created)="addGenerated($event)" (cancelled)="showTextCard.set(false)" />
         </div>
       }
 
@@ -126,7 +133,11 @@ const ACCEPT: Record<PostType, string> = {
         </div>
       }
 
-      <!-- Legenda -->
+      <!-- Legenda (Story não tem legenda pela API) -->
+      @if (type() === 'story') {
+        <p class="alert info small">Story não tem legenda: o texto vai na própria imagem. Use "Criar card de texto" (formato
+          Story 9:16) ou uma arte sua. Enquete e figurinhas, só pelo app do Instagram.</p>
+      } @else {
       <label class="field">
         <span>Legenda</span>
         <textarea rows="7" [value]="caption()" [disabled]="busy()"
@@ -146,12 +157,16 @@ const ACCEPT: Record<PostType, string> = {
       <app-claude-panel [accountId]="accountId()" [currentText]="caption()"
                         [artifacts]="claudeArtifacts()" (use)="useClaude($event)" />
       <app-jev-review [accountId]="accountId()" [caption]="caption()" [kind]="type()" />
+      }
 
       @if (status() === 'error') {
         <p class="alert error">{{ message() }}</p>
       }
       @if (status() === 'working') {
         <p class="alert info"><span class="spinner"></span> {{ message() }}</p>
+      }
+      @if (status() === 'scheduled') {
+        <p class="alert ok">{{ message() }} Acompanhe na aba Agendados.</p>
       }
       @if (status() === 'done') {
         <p class="alert ok">
@@ -163,6 +178,14 @@ const ACCEPT: Record<PostType, string> = {
       }
 
       <div class="actions">
+        <label class="schedule" title="Data e hora para publicar sozinho (o dashboard e o túnel precisam estar ligados nesse horário)">
+          <span class="small muted">Agendar para</span>
+          <input type="datetime-local" [value]="scheduleAt()" [min]="minSchedule()" [disabled]="busy()"
+                 (input)="scheduleAt.set($any($event.target).value)" aria-label="Data e hora do agendamento" />
+        </label>
+        <button title="Envia a mídia agora e publica sozinho no horário escolhido" type="button" class="btn ghost"
+                [disabled]="!canSchedule()" (click)="schedule()">Agendar</button>
+        <span class="spacer"></span>
         <button title="Apaga mídias e legenda deste editor" type="button" class="btn ghost" [disabled]="busy() || !dirty()" (click)="reset()">Limpar</button>
         <button title="Publica agora no Instagram (precisa do túnel aberto)" type="button" class="btn primary" [disabled]="!canPublish()" (click)="publish()">
           Publicar agora
@@ -185,6 +208,7 @@ export class Composer {
     { value: 'image', label: 'Post estático', help: '1 foto (ou card de texto) no feed' },
     { value: 'carousel', label: 'Carrossel', help: 'De 2 a 20 fotos e/ou vídeos que a pessoa desliza' },
     { value: 'reel', label: 'Reels', help: '1 vídeo vertical; é o formato que mais alcança gente nova' },
+    { value: 'story', label: 'Story', help: '1 foto ou vídeo vertical 9:16, some em 24 h; sem legenda (o texto vai na imagem)' },
   ];
   protected readonly captionMax = CAPTION_MAX;
   protected readonly hashtagSoft = HASHTAG_SOFT;
@@ -224,6 +248,8 @@ export class Composer {
         return `De 2 a ${CAROUSEL_MAX} imagens e/ou vídeos. Todos são cortados na proporção do primeiro.`;
       case 'reel':
         return '1 vídeo MP4/MOV, vertical 9:16 recomendado. O Instagram processa o vídeo antes de publicar (pode levar minutos).';
+      case 'story':
+        return '1 imagem ou 1 vídeo vertical 9:16 (vídeo até 60 s). Fica no ar por 24 horas.';
     }
   });
 
@@ -232,16 +258,22 @@ export class Composer {
     return this.type() === 'carousel' ? n < CAROUSEL_MAX : n === 0;
   });
 
-  protected canPublish = computed(() => {
-    if (!this.connected() || this.busy() || this.captionTooLong() || this.tooManyHashtags()) return false;
+  /** Mídia e legenda prontas (vale para publicar e para agendar). */
+  private ready = computed(() => {
+    if (this.busy() || this.captionTooLong() || this.tooManyHashtags()) return false;
     const n = this.items().length;
     return this.type() === 'carousel' ? n >= 2 && n <= CAROUSEL_MAX : n === 1;
   });
+  protected canPublish = computed(() => this.connected() && this.ready());
+  protected scheduleAt = signal('');
+  protected minSchedule = () => localInput(Date.now() + 2 * 60_000);
+  protected canSchedule = computed(() => this.ready() && !!this.scheduleAt() && Date.parse(this.scheduleAt()) > Date.now() + 60_000);
 
   setType(type: PostType): void {
     if (type === this.type()) return;
     // Mantém só o que serve no novo formato.
     const keep = this.items().filter((m) => (type === 'reel' ? m.kind === 'video' : type === 'image' ? m.kind === 'image' : true));
+    if (type === 'story') keep.forEach((m) => (m.warning = m.width > m.height ? 'Horizontal: no Story fica com faixas. Prefira vertical 9:16.' : undefined));
     const limit = type === 'carousel' ? CAROUSEL_MAX : 1;
     this.items().filter((m) => !keep.slice(0, limit).includes(m)).forEach(release);
     this.items.set(keep.slice(0, limit));
@@ -257,7 +289,7 @@ export class Composer {
       const d = this.draft();
       if (!d) return;
       untracked(() => {
-        this.setType(d.kind === 'carousel' ? 'carousel' : d.kind === 'reel' ? 'reel' : 'image');
+        this.setType(d.kind === 'carousel' ? 'carousel' : d.kind === 'reel' ? 'reel' : d.kind === 'story' ? 'story' : 'image');
         this.caption.set(d.body);
         this.loadDraftMedia(d);
       });
@@ -311,6 +343,8 @@ export class Composer {
       if (this.type() === 'image' && video) return this.fail('Post estático aceita apenas imagem. Para vídeo use Reels.');
       try {
         const media = video ? await loadVideo(file) : await loadImage(file);
+        // Story é vertical: o aviso de proporção do feed não vale; avisa se vier horizontal.
+        if (this.type() === 'story') media.warning = media.width > media.height ? 'Horizontal: no Story fica com faixas. Prefira vertical 9:16.' : undefined;
         this.items.update((list) => [...list, media]);
       } catch (e) {
         return this.fail((e as Error).message);
@@ -359,39 +393,62 @@ export class Composer {
     this.showTextCard.set(false);
   }
 
+  /** Envia as mídias para o backend e monta o pedido de publicação. */
+  private async uploadRequest(uploaded: string[]): Promise<PublishRequest> {
+    const media = this.items();
+    for (const [i, m] of media.entries()) {
+      this.message.set(`Enviando mídia ${i + 1} de ${media.length}…`);
+      uploaded.push((await this.api.upload(m.file)).file);
+    }
+    let coverItem: string | undefined;
+    const cover = this.cover();
+    if (cover) {
+      this.message.set('Enviando capa…');
+      coverItem = (await this.api.upload(cover.file)).file;
+      uploaded.push(coverItem);
+    }
+    return {
+      type: this.type(),
+      caption: this.type() === 'story' ? '' : this.caption(),
+      items: uploaded.slice(0, media.length),
+      coverItem,
+      shareToFeed: this.shareToFeed(),
+      trial: this.type() === 'reel' && this.trial(),
+      audioName: this.type() === 'reel' ? this.audioName() : undefined,
+    };
+  }
+
+  async schedule(): Promise<void> {
+    const at = Date.parse(this.scheduleAt());
+    const uploaded: string[] = [];
+    this.status.set('working');
+    try {
+      const request = await this.uploadRequest(uploaded);
+      this.message.set('Agendando…');
+      await this.api.schedule(this.accountId(), { request, at, draftId: this.draft()?.id });
+      this.reset();
+      this.scheduleAt.set('');
+      this.message.set(`Agendado para ${new Date(at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}.`);
+      this.status.set('scheduled');
+    } catch (e) {
+      uploaded.forEach((f) => this.api.deleteUpload(f).catch(() => undefined));
+      this.fail(errorMessage(e));
+    }
+  }
+
   async publish(): Promise<void> {
     const accountId = this.accountId();
     const uploaded: string[] = [];
     this.status.set('working');
     this.permalink.set(undefined);
     try {
-      const media = this.items();
-      for (const [i, m] of media.entries()) {
-        this.message.set(`Enviando mídia ${i + 1} de ${media.length}…`);
-        uploaded.push((await this.api.upload(m.file)).file);
-      }
-      let coverItem: string | undefined;
-      const cover = this.cover();
-      if (cover) {
-        this.message.set('Enviando capa…');
-        coverItem = (await this.api.upload(cover.file)).file;
-        uploaded.push(coverItem);
-      }
-
+      const request = await this.uploadRequest(uploaded);
       this.message.set(
         this.type() === 'image'
           ? 'Publicando no Instagram…'
           : 'Publicando no Instagram… vídeos e carrosséis podem levar alguns minutos. Não feche a página.',
       );
-      const result = await this.api.publish(accountId, {
-        type: this.type(),
-        caption: this.caption(),
-        items: uploaded.slice(0, media.length),
-        coverItem,
-        shareToFeed: this.shareToFeed(),
-        trial: this.type() === 'reel' && this.trial(),
-        audioName: this.type() === 'reel' ? this.audioName() : undefined,
-      });
+      const result = await this.api.publish(accountId, request);
       const draft = this.draft();
       if (draft) await this.api.updateDraft(draft.id, { status: 'publicado' }).catch(() => undefined);
       this.reset();
