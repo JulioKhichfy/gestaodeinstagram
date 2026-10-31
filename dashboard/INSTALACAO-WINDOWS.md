@@ -16,7 +16,7 @@ Leva de 40 minutos a 1 hora na primeira vez. Depois, o dia a dia é **dois cliqu
 | cloudflared | Túnel: a Meta baixa daqui as fotos e vídeos na hora de publicar | Grátis |
 | Codex (ChatGPT) **ou** Claude Code | O assistente que escreve legendas, roteiros e respostas | Sua assinatura do ChatGPT ou do Claude |
 | Instagram profissional + Página do Facebook | Exigência da Meta para gerenciar a conta por um sistema | Grátis |
-| Acesso ao app da Meta | Permissão para o dashboard conversar com o Instagram | Grátis |
+| App da Meta no seu nome | Permissão para o dashboard conversar com o Instagram | Grátis |
 
 ---
 
@@ -110,21 +110,42 @@ No app do Instagram: **Editar perfil** › **Página** › **Conectar uma Págin
 > **Atenção:** estar ligado pela **Central de Contas** (mesmo login no Facebook e no Instagram) **não é o mesmo**.
 > O dashboard só enxerga a conta se ela aparecer em **Editar perfil › Página**.
 
-### 4.4 Acesso ao app da Meta
+### 4.4 Criar o seu app da Meta
 
-O dashboard conversa com o Instagram por meio de um "app" cadastrado na Meta. Em modo de testes (o nosso caso), só
-pessoas com papel no app conseguem entrar. Existem dois caminhos:
+O dashboard conversa com o Instagram por meio de um "app" cadastrado na Meta, no **seu** nome. É grátis e você não
+precisa publicar o app: ele fica em **modo Desenvolvimento**, em que só você (a criadora) consegue entrar, sem precisar
+da análise da Meta. Faça tudo no computador, com o seu Facebook.
 
-**Caminho A (recomendado): entrar como administradora do app que já existe.**
-1. Crie a sua conta de desenvolvedora: abra **developers.facebook.com**, clique em **Começar** e entre com o seu
-   Facebook. Confirme o e-mail e o telefone se pedir.
-2. Peça a quem administra o app para adicionar você: no painel do app, **Funções do app** › **Funções** ›
-   **Adicionar pessoas** › **Administrador** › o seu nome.
-3. Aceite o convite em **developers.facebook.com** (aparece um aviso no topo, ou em "Solicitações").
-4. Peça a essa pessoa o **ID do app** e a **Chave secreta do app**; você vai usar na Parte 5.
+**1. Virar desenvolvedora (uma vez)**
+1. Abra **developers.facebook.com** e clique em **Começar** (ou "Get Started").
+2. Entre com o seu Facebook, aceite os termos e confirme o e-mail e o telefone quando pedir.
 
-**Caminho B: criar o seu próprio app.** Siga as seções 3 e 1.2 do [SETUP.md](SETUP.md) (criar o app do tipo Empresa
-e adicionar o "Login do Facebook para Empresas").
+**2. Criar o app**
+1. Em **Meus apps**, clique em **Criar app**.
+2. Caso de uso: escolha **Outro** › Avançar.
+3. Tipo de app: escolha **Empresa** › Avançar.
+4. Portfólio empresarial: escolha **Não quero conectar agora** (dá para fazer depois).
+5. Nome do app (ex.: `gestao-contas`) e o seu e-mail › **Criar app**. Pode pedir a senha do Facebook.
+
+**3. Ligar o Instagram e o login do Facebook**
+1. No painel do app, procure a lista de produtos e, no card **Instagram**, clique em **Configurar**.
+2. Abre a página **Configuração da API com login do Facebook**. Clique em **Configurar o Login do Facebook para Empresas**.
+3. Se aparecer o campo **URIs de redirecionamento do OAuth válidos**, coloque `http://localhost:3000/api/facebook/callback`
+   e salve. Se ele recusar por não ser `https`, deixe em branco: em modo Desenvolvimento a Meta aceita `localhost`.
+4. Não clique em "Publicar" nem mude para "Ao vivo": o app fica em **Desenvolvimento**.
+
+**4. Copiar o ID e a chave**
+1. Menu da esquerda: **Configurações do app** › **Básico**.
+2. Copie o **ID do Aplicativo**.
+3. Ao lado de **Chave Secreta do Aplicativo**, clique em **Mostrar** (pede a senha do Facebook) e copie **a chave inteira**
+   (são 32 letras e números).
+4. Guarde os dois para a Parte 5. **A chave secreta é como uma senha:** não envie por mensagem nem publique.
+
+> Se, ao entrar com o Facebook no dashboard (Parte 6), a Meta mostrar um erro de permissões ("Invalid Scopes" ou
+> "configuração necessária"), crie uma configuração: **Login do Facebook para Empresas** › **Configurações** ›
+> **Criar configuração** › tipo **Token de acesso do usuário** › marque as permissões `instagram_basic`,
+> `instagram_content_publish`, `instagram_manage_insights`, `instagram_manage_comments`, `pages_show_list`,
+> `pages_read_engagement` e `business_management` › salve e copie o **ID da configuração** para `FB_CONFIG_ID` no `.env`.
 
 ## Parte 5. Configurar
 
@@ -139,15 +160,21 @@ FB_APP_SECRET=a chave secreta do app (Parte 4.4)
 AI_PROVIDER=chatgpt
 ```
 
-4. Opcionais, que melhoram os textos e as imagens (peça as chaves a quem montou o dashboard, ou crie as suas):
+4. O **Jev** (dá nota às legendas, guia as reescritas e escolhe as melhores fotos) usa a chave que quem montou o
+   dashboard vai te passar. Cole na linha:
 
 ```
-TYPESAFE_API_KEY=   (Jev: dá nota às legendas e escolhe as melhores fotos)
+TYPESAFE_API_KEY=a chave do Jev
+```
+
+5. Opcionais, para sugestões de fotos e vídeos gratuitos (crie as suas, grátis, ou peça a quem montou o dashboard):
+
+```
 UNSPLASH_ACCESS_KEY=   (fotos gratuitas de alta qualidade)
 PIXABAY_API_KEY=   (fotos e vídeos gratuitos)
 ```
 
-5. Salve (**Ctrl+S**). Não precisa mexer em `PUBLIC_BASE_URL`: o `iniciar.cmd` preenche sozinho.
+6. Salve (**Ctrl+S**). Não precisa mexer em `PUBLIC_BASE_URL`: o `iniciar.cmd` preenche sozinho.
 
 > O `.env` guarda chaves secretas: não envie esse arquivo para ninguém e não publique.
 
@@ -232,4 +259,5 @@ Dica: peça sempre "salve com outro nome" para nunca perder o original.
 | Nenhuma conta aparece em Contas | Parte 4.3 (vínculo com a Página) e "Editar acesso" na janela do Facebook |
 | "Publicar está desligado" | A janela preta precisa estar aberta; se o túnel falhou, feche e abra o `iniciar.cmd` de novo |
 | "Porta em uso" ao abrir | Já existe um dashboard aberto: feche as janelas pretas e abra de novo |
-| Botão do Facebook dá erro de "app" ou de permissão | Você ainda não aceitou o papel de administradora no app (Parte 4.4) |
+| Erro do Facebook sobre o app ("app não disponível", "URL bloqueada") | Confira o ID e a chave no `.env` (Parte 4.4, passo 4) e se o app está em Desenvolvimento; entre com o mesmo Facebook que criou o app |
+| Erro de permissões ("Invalid Scopes") ao entrar com o Facebook | Crie a configuração do aviso da Parte 4.4 e coloque o ID em `FB_CONFIG_ID` |
