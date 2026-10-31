@@ -71,14 +71,13 @@ export async function fbMe(token: string): Promise<{ name: string; permissions: 
  */
 export async function fbLinkedInstagram(
   token: string,
-): Promise<{ accounts: { igUserId: string; username: string }[]; pagesWithoutInstagram: string[] }> {
+): Promise<{ accounts: { igUserId: string; username: string; page?: string }[]; pagesWithoutInstagram: string[] }> {
   type Page = { name?: string; instagram_business_account?: { id: string; username?: string } };
   const res = await get<{ data: Page[] }>('me/accounts', { fields: 'name,instagram_business_account{id,username}', limit: '100' }, token);
   return {
     accounts: res.data
-      .map((p) => p.instagram_business_account)
-      .filter((a): a is { id: string; username: string } => Boolean(a?.username))
-      .map((a) => ({ igUserId: a.id, username: a.username })),
+      .filter((p) => p.instagram_business_account?.username)
+      .map((p) => ({ igUserId: p.instagram_business_account!.id, username: p.instagram_business_account!.username!, page: p.name })),
     pagesWithoutInstagram: res.data.filter((p) => !p.instagram_business_account).map((p) => p.name ?? '(sem nome)'),
   };
 }

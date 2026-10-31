@@ -5,9 +5,9 @@ export const GEN_KIND_LABELS: Record<GenKind, string> = { image: 'Post estático
 
 export const STEP_LABELS: Record<GenStep, string> = {
   fila: 'Na fila',
-  escrevendo: 'Claude escrevendo…',
+  escrevendo: 'Escrevendo…',
   revisando: 'Jev avaliando…',
-  reescrevendo: 'Claude reescrevendo com as dicas do Jev…',
+  reescrevendo: 'Reescrevendo com as dicas do Jev…',
   midia: 'Buscando fotos e vídeos…',
   pronto: 'Pronto',
   erro: 'Erro',
@@ -20,7 +20,7 @@ interface Row {
 }
 
 /**
- * "Gerar posts": de 1 a N temas. Para cada um, o Claude escreve, o Jev avalia e guia reescritas, e um banco de
+ * "Gerar posts": de 1 a N temas. Para cada um, a IA escreve, o Jev avalia e guia reescritas, e um banco de
  * imagens gratuito sugere a mídia. Tudo vira rascunho; publicar continua sendo decisão de quem usa o dashboard.
  */
 @Component({
@@ -34,8 +34,8 @@ interface Row {
       </header>
 
       @if (!job()) {
-        <p class="muted small">Escreva o tema de cada post. O Claude escreve, o Jev avalia a legenda (e, se a nota ficar abaixo
-          de {{ status()?.target ?? 75 }}, o Claude reescreve seguindo as dicas dele) e um banco de imagens gratuito sugere fotos ou vídeos.
+        <p class="muted small">Escreva o tema de cada post. A IA escreve, o Jev avalia a legenda (e, se a nota ficar abaixo
+          de {{ status()?.target ?? 75 }}, a IA reescreve seguindo as dicas dele) e um banco de imagens gratuito sugere fotos ou vídeos.
           Tudo vira rascunho: você revisa e decide o que publicar.</p>
 
         @for (row of rows(); track row.key; let i = $index) {
@@ -53,7 +53,7 @@ interface Row {
 
         <label class="check">
           <input type="checkbox" [checked]="rewrite()" [disabled]="!status()?.jev" (change)="rewrite.set($any($event.target).checked)" />
-          Reescrever com o Claude até o Jev dar nota {{ status()?.target ?? 75 }} (até {{ status()?.maxRewrites ?? 2 }} vezes)
+          Reescrever com a IA até o Jev dar nota {{ status()?.target ?? 75 }} (até {{ status()?.maxRewrites ?? 2 }} vezes)
         </label>
         @if (status() && !status()!.jev) { <small class="muted">Jev desligado (sem TYPESAFE_API_KEY): o texto sai sem avaliação.</small> }
         <label class="check">
@@ -66,7 +66,7 @@ interface Row {
 
         @if (error()) { <p class="alert error">{{ error() }}</p> }
         <div class="actions">
-          <button title="Claude escreve, Jev avalia e guia a reescrita, banco de imagens sugere fotos; tudo vira rascunho" type="button" class="btn primary" [disabled]="busy() || !ready()" (click)="start()">
+          <button title="A IA escreve, Jev avalia e guia a reescrita, banco de imagens sugere fotos; tudo vira rascunho" type="button" class="btn primary" [disabled]="busy() || !ready()" (click)="start()">
             @if (busy()) { <span class="spinner"></span> Enviando… } @else { Gerar {{ ready() }} post(s) }
           </button>
         </div>

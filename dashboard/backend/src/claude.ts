@@ -113,8 +113,12 @@ export async function askClaude(db: DatabaseSync, input: AskInput, timeoutMs = 3
 
 const sleep = (ms: number) => new Promise((ok) => setTimeout(ok, ms));
 
+/** Nome do assistente na tela e nas mensagens ("Claude" ou "ChatGPT"). */
+export const assistantName = () => (config.aiProvider === 'chatgpt' ? 'ChatGPT' : 'Claude');
+
 /**
- * Uma chamada ao Claude Code: system prompt + pedido, devolve o texto. `wait` espera vaga em vez de recusar
+ * Uma chamada ao assistente: system prompt + pedido, devolve o texto. Usa a assinatura configurada em AI_PROVIDER:
+ * Claude Code (`claude -p`) ou Codex CLI logado com o ChatGPT (`codex exec`). `wait` espera vaga em vez de recusar
  * (usado pelo gerador de posts, que roda em segundo plano).
  */
 export async function completeClaude(
@@ -123,12 +127,19 @@ export async function completeClaude(
   { timeoutMs = 3 * 60 * 1000, wait = false }: { timeoutMs?: number; wait?: boolean } = {},
 ): Promise<string> {
   while (active >= MAX_CONCURRENT) {
-    if (!wait) throw new ClaudeError('O Claude já está trabalhando em outros pedidos. Aguarde alguns segundos.');
+    if (!wait) throw new ClaudeError(`O ${assistantName()} já está trabalhando em outros pedidos. Aguarde alguns segundos.`);
     await sleep(1000);
   }
   active++;
   const workDir = path.join(os.tmpdir(), 'ig-dashboard-claude');
   fs.mkdirSync(workDir, { recursive: true });
+  if (config.aiProvider === 'chatgpt') {
+    try {
+      return await completeCodex(systemPrompt, userPrompt, workDir, timeoutMs);
+    } finally {
+      active--;
+    }
+  }
   const promptFile = path.join(workDir, `system-${crypto.randomUUID()}.txt`);
   fs.writeFileSync(promptFile, systemPrompt);
   try {
@@ -141,7 +152,7 @@ export async function completeClaude(
       '--system-prompt-file', `"${promptFile}"`,
     ];
     if (config.claudeModel) args.push('--model', config.claudeModel);
-    const out = await run(config.claudeBin, args, userPrompt, workDir, timeoutMs);
+    const out = await run(config.claudeBin, args, userPrompt, workDir, timeoutMs, CLAUDE_CLI);
     let parsed: { result?: string; is_error?: boolean };
     try {
       parsed = JSON.parse(out);
@@ -158,22 +169,55 @@ export async function completeClaude(
   }
 }
 
-function run(bin: string, args: string[], stdin: string, cwd: string, timeoutMs: number): Promise<string> {
+/**
+ * ChatGPT pelo Codex CLI (`codex exec`), logado com a assinatura (rode `codex` uma vez e escolha "Sign in with ChatGPT").
+ * Doc conferida em out/2026: https://learn.chatgpt.com/docs/non-interactive-mode. Sandbox só leitura, sessão não
+ * salva, numa pasta vazia; o pedido vai pelo stdin ("-") e só a mensagem final sai no stdout.
+ */
+async function completeCodex(systemPrompt: string, userPrompt: string, workDir: string, timeoutMs: number): Promise<string> {
+  const args = ['exec', '--skip-git-repo-check', '--sandbox', 'read-only', '--ephemeral'];
+  if (config.codexModel) args.push('-m', config.codexModel);
+  args.push('-');
+  const prompt = `# Instruções (siga sempre)\n${systemPrompt}\n\n${userPrompt}\n\nResponda só com o texto pedido. Não execute comandos nem leia arquivos.`;
+  const out = (await run(config.codexBin, args, prompt, workDir, timeoutMs, CODEX_CLI)).trim();
+  if (!out) throw new ClaudeError('O ChatGPT (Codex) não devolveu resposta. Tente de novo.');
+  return out;
+}
+
+interface CliInfo {
+  name: string;
+  notFound: string;
+  notLogged: string;
+}
+
+const CLAUDE_CLI: CliInfo = {
+  name: 'Claude Code',
+  notFound: 'Claude Code não encontrado. Instale e faça login (comando "claude") neste PC.',
+  notLogged: 'Claude Code não está logado. Rode "claude" num terminal e faça login com sua assinatura.',
+};
+
+const CODEX_CLI: CliInfo = {
+  name: 'Codex (ChatGPT)',
+  notFound: 'Codex não encontrado. Instale com "npm install -g @openai/codex" e faça login rodando "codex" num terminal.',
+  notLogged: 'Codex não está logado. Rode "codex" num terminal e escolha "Sign in with ChatGPT".',
+};
+
+function run(bin: string, args: string[], stdin: string, cwd: string, timeoutMs: number, cli: CliInfo): Promise<string> {
   return new Promise((resolve, reject) => {
-    // shell: o `claude` no Windows é um .cmd, que o Node só executa via shell. A linha de comando é montada só com
-    // argumentos fixos (nenhum texto do usuário); o pedido vai pelo stdin.
+    // shell: `claude` e `codex` no Windows são .cmd, que o Node só executa via shell. A linha de comando é montada só
+    // com argumentos fixos (nenhum texto do usuário); o pedido vai pelo stdin.
     const child = spawn([bin, ...args].join(' '), { cwd, shell: true, windowsHide: true });
     let stdout = '';
     let stderr = '';
     const timer = setTimeout(() => {
       child.kill();
-      reject(new ClaudeError('O Claude demorou demais para responder. Tente um pedido mais curto.'));
+      reject(new ClaudeError(`O ${cli.name} demorou demais para responder. Tente um pedido mais curto.`));
     }, timeoutMs);
     child.stdout.on('data', (d) => (stdout += d));
     child.stderr.on('data', (d) => (stderr += d));
     child.on('error', (e) => {
       clearTimeout(timer);
-      reject(new ClaudeError(`Não consegui iniciar o Claude Code (${e.message}). Ele está instalado e logado?`));
+      reject(new ClaudeError(`Não consegui iniciar o ${cli.name} (${e.message}). Ele está instalado e logado?`));
     });
     child.on('close', (code) => {
       clearTimeout(timer);
@@ -182,10 +226,10 @@ function run(bin: string, args: string[], stdin: string, cwd: string, timeoutMs:
       reject(
         new ClaudeError(
           /not found|não é reconhecido|ENOENT/i.test(detail)
-            ? 'Claude Code não encontrado. Instale e faça login (comando "claude") neste PC.'
-            : /login|auth|credential/i.test(detail)
-              ? 'Claude Code não está logado. Rode "claude" num terminal e faça login com sua assinatura.'
-              : `Claude Code falhou: ${detail || `código ${code}`}`,
+            ? cli.notFound
+            : /login|auth|credential|sign in/i.test(detail)
+              ? cli.notLogged
+              : `${cli.name} falhou: ${detail || `código ${code}`}`,
         ),
       );
     });

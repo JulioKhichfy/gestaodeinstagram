@@ -36,7 +36,7 @@ const PROVIDERS: Record<StockItem['provider'], { label: string; site: string }> 
       <section class="card list">
         <div class="list-head">
           <h2>Rascunhos</h2>
-          <button type="button" class="btn primary" (click)="openGenerator()" title="Gerar de 1 a 10 posts com Claude + Jev">＋ Gerar posts</button>
+          <button type="button" class="btn primary" (click)="openGenerator()" title="Gerar de 1 a 10 posts com IA + Jev">＋ Gerar posts</button>
         </div>
         <p class="muted small">Cada artefato (roteiro, legenda, textos do carrossel, ideia de som) fica guardado aqui até virar post.</p>
         <form class="new" (submit)="create($event)">
@@ -47,8 +47,8 @@ const PROVIDERS: Record<StockItem['provider'], { label: string; site: string }> 
           </select>
           <button title="Cria um rascunho vazio com este título" class="btn primary" type="submit" [disabled]="!newTitle().trim()">Criar</button>
         </form>
-        <button title="Pede ao Claude 10 ideias; cada uma vira um rascunho" type="button" class="link-btn" (click)="ideas.set(!ideas())">
-          {{ ideas() ? 'Fechar' : 'Sem ideias? Peça 10 ao Claude' }}
+        <button title="Pede à IA 10 ideias; cada uma vira um rascunho" type="button" class="link-btn" (click)="ideas.set(!ideas())">
+          {{ ideas() ? 'Fechar' : 'Sem ideias? Peça 10 à IA' }}
         </button>
         @if (ideas()) {
           <app-claude-panel [accountId]="id()" [artifacts]="['ideias', 'livre']" (use)="createFromIdeas($event.text)" />
@@ -143,7 +143,7 @@ const PROVIDERS: Record<StockItem['provider'], { label: string; site: string }> 
         } @else {
           <div class="empty">
             <p><strong>Escolha um rascunho</strong> ou crie um novo.</p>
-            <p class="muted">Dica: crie um rascunho por ideia, peça o roteiro ou a legenda ao Claude, ajuste com a sua voz e
+            <p class="muted">Dica: crie um rascunho por ideia, peça o roteiro ou a legenda à IA, ajuste com a sua voz e
               mova para “Pronto para postar”. Na hora de postar, clique em “Levar para publicação”.</p>
           </div>
         }
@@ -287,7 +287,7 @@ export class DraftsPage {
     this.select(d);
   }
 
-  /** Cada linha numerada/com hífen da resposta do Claude vira um rascunho em "Ideias". */
+  /** Cada linha numerada/com hífen da resposta da IA vira um rascunho em "Ideias". */
   async createFromIdeas(text: string): Promise<void> {
     const lines = text
       .split('\n')

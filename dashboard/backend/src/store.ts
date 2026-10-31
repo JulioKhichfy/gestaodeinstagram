@@ -28,6 +28,8 @@ export interface FacebookConnection {
   tokenExpiresAt: number;
   permissions: string[];
   linked: Record<string, string>;
+  /** Contas do Instagram vinculadas às Páginas de quem entrou (para adicionar pela tela Contas). */
+  available?: { igUserId: string; username: string; page?: string }[];
 }
 
 interface Session {

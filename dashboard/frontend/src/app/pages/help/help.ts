@@ -9,7 +9,7 @@ const normalize = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '
   template: `
     <header class="head">
       <h1>Ajuda</h1>
-      <p class="muted">Tudo sobre o dashboard, o algoritmo do Instagram, métricas, Claude e tráfego pago.</p>
+      <p class="muted">Tudo sobre o dashboard, o algoritmo do Instagram, métricas, IA e tráfego pago.</p>
       <input type="search" class="search" placeholder="Buscar: hashtags, Reels, impulsionar, score, senha…"
              [value]="query()" (input)="query.set($any($event.target).value)" aria-label="Buscar na ajuda" />
     </header>

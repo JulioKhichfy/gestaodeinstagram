@@ -82,7 +82,7 @@ export function ago(iso: string, now = Date.now()): string {
               @for (k of kinds; track k) { <option [value]="k">{{ kindLabels[k] }}</option> }
             </select>
             <button type="button" class="btn primary" [disabled]="!!busy()" (click)="createPost(c)"
-                    title="O Claude escreve com outras palavras, cita a fonte e trata rumor como rumor; o Jev revisa. Vira rascunho.">Criar post</button>
+                    title="A IA escreve com outras palavras, cita a fonte e trata rumor como rumor; o Jev revisa. Vira rascunho.">Criar post</button>
           }
           <button type="button" class="btn ghost" (click)="ignore(c)" title="Tira da lista (não aparece de novo)">Ignorar</button>
         </div>
@@ -232,7 +232,7 @@ export class RadarPage {
         const job = await this.api.generateJob(jobId);
         const item = job.items[0];
         if (!job.done) {
-          const steps: Record<string, string> = { escrevendo: 'Claude escrevendo…', revisando: 'Jev avaliando…', reescrevendo: 'Claude reescrevendo…', midia: 'Buscando mídia…' };
+          const steps: Record<string, string> = { escrevendo: 'Escrevendo…', revisando: 'Jev avaliando…', reescrevendo: 'Reescrevendo…', midia: 'Buscando mídia…' };
           this.jobs.update((m) => ({ ...m, [clusterId]: steps[item.step] ?? 'Na fila…' }));
           return this.follow(clusterId, jobId);
         }

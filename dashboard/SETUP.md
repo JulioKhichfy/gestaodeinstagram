@@ -19,9 +19,17 @@ cd caminho\do\projeto\dashboard
 npm install
 ```
 
+> **Instalação num notebook Windows para quem só vai usar:** siga o [INSTALACAO-WINDOWS.md](INSTALACAO-WINDOWS.md)
+> (programas, assistente ChatGPT ou Claude, Facebook/Página, `iniciar.cmd` e edição de vídeo).
+
 ### 1.1 Cadastrar as contas
 
-Copie `backend/accounts.example.json` para `backend/accounts.json` e coloque as suas contas:
+O jeito mais fácil é pela tela **Contas** do dashboard: entre com o Facebook e adicione as contas vinculadas às suas
+Páginas, ou adicione pelo @; o "Perfil da conta" (o `claude.md`) é editado ali mesmo. A tela grava
+`backend/accounts.json`. Sem esse arquivo, o dashboard começa sem contas.
+
+Para editar à mão (ou usar recursos avançados como `radar` e `hub`), o formato é este (modelo em
+`backend/accounts.example.json`):
 
 ```json
 [
@@ -33,7 +41,7 @@ Copie `backend/accounts.example.json` para `backend/accounts.json` e coloque as 
 - `username`: o @ da conta, sem o @. O login do Instagram recusa outra conta.
 - `folder`: pasta (relativa à raiz do projeto) com o `claude.md` da conta, que o assistente Claude lê.
   Use `dashboard/exemplo-conta/claude.md` como modelo.
-- `business`: `livros`, `servicos` ou `loja` (orienta o tráfego pago e o Claude).
+- `business`: `livros`, `servicos`, `loja` ou `conteudo` (orienta o tráfego pago e o assistente).
 - `ads` (opcional): `objective`, `audience`, `budget`, `tip` para sobrepor a recomendação de tráfego pago.
 
 O `accounts.json` e as pastas das contas são dados do cliente: ficam **fora do Git**.

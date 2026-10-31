@@ -13,9 +13,11 @@ import { generateRoutes } from './routes-generate.ts';
 import { jevRoutes } from './routes-jev.ts';
 import { leadsRoutes } from './routes-leads.ts';
 import { movieRoutes } from './routes-movies.ts';
+import { accountAdmin } from './routes-accounts.ts';
 import { radarRoutes } from './routes-radar.ts';
 import { scheduleRoutes } from './routes-schedule.ts';
 import { PublishError, publishFor } from './schedule.ts';
+import { assistantName } from './claude.ts';
 import { v2 } from './routes-v2.ts';
 import { isSyncing, syncAccount } from './sync.ts';
 import { connectionAuth, encrypt, read, write } from './store.ts';
@@ -166,6 +168,7 @@ api.delete('/accounts/:id/connection', auth.requireSession, (req, res) => {
 api.get('/config', auth.requireSession, (_req, res) => {
   res.json({
     missing: setupMissing(),
+    assistant: assistantName(),
     publishMissing: publishMissing(),
     instagramLogin: missingConfig().length === 0,
     redirectUri: redirectUri(),
@@ -271,6 +274,7 @@ api.post(
 // Descoberta de perfis (v3): a volta do login do Facebook é pública; o resto exige sessão.
 api.use(facebookCallback);
 api.use(auth.requireSession, discovery);
+api.use(auth.requireSession, accountAdmin);
 api.use(auth.requireSession, jevRoutes());
 api.use(auth.requireSession, generateRoutes());
 api.use(auth.requireSession, leadsRoutes());

@@ -23,7 +23,19 @@ export const HELP: HelpSection[] = [
         q: 'Como o dashboard funciona?',
         a: [
           'Ele roda no seu computador (backend na porta 3000 e tela em http://localhost:4300). Cada conta tem uma aba com: Publicar, Rascunhos, Relatórios, Posts e experimentos, Ciclos de 10 dias, Tráfego pago e Descoberta.',
-          'Para conectar e publicar, o túnel (ngrok) precisa estar ligado: o Instagram baixa as fotos/vídeos por ele. Para ver relatórios e escrever rascunhos, basta o "npm run dev".',
+          'Para publicar, o túnel precisa estar ligado: o Instagram baixa as fotos/vídeos por ele. O jeito mais fácil é abrir pelo iniciar.cmd (pasta dashboard), que liga o túnel, o dashboard e o navegador de uma vez.',
+        ],
+      },
+      {
+        q: 'Como adicionar ou remover contas?',
+        a: [
+          'No menu de cima, Contas › Entrar com o Facebook: as contas profissionais vinculadas às suas Páginas aparecem para adicionar com um clique (já conectadas). Ali também dá para renomear a aba, mudar o tipo de negócio, editar o "Perfil da conta" (o que o assistente sabe da conta) e remover.',
+        ],
+      },
+      {
+        q: 'O assistente é o Claude ou o ChatGPT?',
+        a: [
+          'Quem escreve os textos é o assistente da sua assinatura, escolhido no backend/.env: AI_PROVIDER=claude (Claude Code) ou AI_PROVIDER=chatgpt (Codex, com a assinatura do ChatGPT). Para trocar, mude essa linha e abra o dashboard de novo. O botão "Pedir ao…" mostra qual está em uso.',
         ],
       },
       {

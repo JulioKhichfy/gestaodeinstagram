@@ -85,7 +85,7 @@ describe('PostGenerator', () => {
     await c.start();
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('Claude reescrevendo com as dicas do Jev');
+    expect(el.textContent).toContain('Reescrevendo com as dicas do Jev');
 
     await vi.advanceTimersByTimeAsync(2100);
     fixture.detectChanges();

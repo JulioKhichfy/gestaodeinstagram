@@ -24,7 +24,7 @@ import { encrypt, facebookToken, read, write } from './store.ts';
 const REQUIRED = ['instagram_basic', 'instagram_manage_insights', 'pages_show_list', 'pages_read_engagement'];
 
 /** Para onde voltar depois do login: a página da conta (conectar) ou a Descoberta. */
-type ReturnTo = 'conta' | 'descoberta';
+type ReturnTo = 'conta' | 'descoberta' | 'contas';
 const oauthStates = new Map<string, { accountId: string; returnTo: ReturnTo; expiresAt: number }>();
 
 const handle =
@@ -63,11 +63,13 @@ facebookCallback.get('/facebook/callback', async (req, res) => {
   const pending = state ? oauthStates.get(state) : undefined;
   if (state) oauthStates.delete(state);
   const back = (accountId: string | undefined, params: Record<string, string>) => {
-    const page = !accountId ? '' : pending?.returnTo === 'conta' ? `conta/${accountId}` : `conta/${accountId}/descoberta`;
+    const page =
+      pending?.returnTo === 'contas' ? 'contas' : !accountId ? '' : pending?.returnTo === 'conta' ? `conta/${accountId}` : `conta/${accountId}/descoberta`;
     res.redirect(`${config.frontendUrl}/${page}?${new URLSearchParams(params)}`);
   };
 
   if (!pending || pending.expiresAt < Date.now()) {
+    if (pending?.returnTo === 'contas') return back(undefined, { fbError: 'Pedido de conexão expirado. Tente de novo.' });
     return back(undefined, { error: 'Pedido de conexão expirado. Tente conectar de novo.' });
   }
   if (!code) return back(pending.accountId, { fbError: error_description ?? 'Conexão cancelada.' });
@@ -91,6 +93,7 @@ facebookCallback.get('/facebook/callback', async (req, res) => {
         tokenExpiresAt: now + expiresIn * 1000,
         permissions: me.permissions,
         linked,
+        available: igAccounts,
       };
       // Contas vinculadas a uma Página passam a sincronizar/publicar por este login, exceto as que já têm
       // conexão válida pelo login do Instagram (essa renova sozinha).
@@ -118,6 +121,11 @@ facebookCallback.get('/facebook/callback', async (req, res) => {
           `Login feito, mas esta conta não apareceu vinculada a uma Página sua. Contas do Instagram encontradas: ${found}.${pages}` +
           ' Vincule a conta profissional à Página (Instagram › Editar perfil › Página) e conecte de novo.',
       });
+    }
+    if (pending.returnTo === 'contas') {
+      const params: Record<string, string> = { fb: '1' };
+      if (pagesWithoutInstagram.length) params.semInstagram = pagesWithoutInstagram.join(', ');
+      return back(undefined, params);
     }
     back(pending.accountId, pending.returnTo === 'conta' ? { connected: '1' } : { fb: '1' });
   } catch (e) {
@@ -147,8 +155,8 @@ discovery.post(
   handle((req, res) => {
     const missing = missingFacebookConfig();
     if (missing.length) throw new DiscoveryError(400, `Configure no backend/.env: ${missing.join(', ')}`);
-    const target = findAccount(String(req.body?.accountId ?? ''))?.id ?? ACCOUNTS[0].id;
-    const returnTo: ReturnTo = req.body?.returnTo === 'conta' ? 'conta' : 'descoberta';
+    const returnTo: ReturnTo = req.body?.returnTo === 'conta' || req.body?.returnTo === 'contas' ? req.body.returnTo : 'descoberta';
+    const target = findAccount(String(req.body?.accountId ?? ''))?.id ?? ACCOUNTS[0]?.id ?? '';
     const state = crypto.randomBytes(24).toString('base64url');
     oauthStates.set(state, { accountId: target, returnTo, expiresAt: Date.now() + 10 * 60 * 1000 });
     res.json({ url: fb.fbAuthorizeUrl(state) });

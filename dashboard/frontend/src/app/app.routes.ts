@@ -14,6 +14,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: 'visao-geral', title: `Visão geral · ${TITLE}`, loadComponent: () => import('./pages/overview/overview').then((m) => m.OverviewPage) },
+      { path: 'contas', title: `Contas · ${TITLE}`, loadComponent: () => import('./pages/contas/contas').then((m) => m.ContasPage) },
       { path: 'ajuda', title: `Ajuda · ${TITLE}`, loadComponent: () => import('./pages/help/help').then((m) => m.HelpPage) },
       { path: 'configuracoes', title: `Configurações · ${TITLE}`, loadComponent: () => import('./pages/settings/settings').then((m) => m.SettingsPage) },
       {

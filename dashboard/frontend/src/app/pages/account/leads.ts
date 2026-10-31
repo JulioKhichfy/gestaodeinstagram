@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Api, Lead, LeadStats, LeadStatus, LeadsStatus, errorMessage } from '../../core/api';
 import { dateTimeBR, num } from '../../core/format';
+import { Assistant } from '../../core/assistant';
 import { Kpi } from '../../shared/kpi';
 
 type Tab = LeadStatus | 'todos';
@@ -19,7 +20,7 @@ const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL
 
 /**
  * Captar clientes: comentários dos posts de quem quer comprar ou contratar. O Jev separa os interessados,
- * o Claude sugere a resposta e você responde com um clique. Nada sai sem você.
+ * a IA sugere a resposta e você responde com um clique. Nada sai sem você.
  */
 @Component({
   selector: 'app-leads',
@@ -96,12 +97,12 @@ const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL
             @if (replyFor() === l.id) {
               <div class="reply">
                 <textarea rows="3" [value]="draft()" (input)="draft.set($any($event.target).value)" aria-label="Resposta ao comentário"
-                          placeholder="Escreva a resposta ou peça uma sugestão ao Claude"></textarea>
+                          placeholder="Escreva a resposta ou peça uma sugestão à IA"></textarea>
                 <div class="line">
                   <small class="muted">{{ draft().length }} caracteres · aparece como resposta pública ao comentário</small>
                   <span class="actions">
-                    <button type="button" class="btn ghost" [disabled]="busy()" (click)="suggest(l)" title="O Claude escreve uma resposta curta no tom da conta (você edita antes de enviar)">
-                      @if (busy() === 'suggest') { <span class="spinner"></span> } Sugerir com o Claude
+                    <button type="button" class="btn ghost" [disabled]="busy()" (click)="suggest(l)" title="A IA escreve uma resposta curta no tom da conta (você edita antes de enviar)">
+                      @if (busy() === 'suggest') { <span class="spinner"></span> } Sugerir com o {{ ai.name() }}
                     </button>
                     <button type="button" class="btn ghost" (click)="replyFor.set(null)" title="Fecha sem responder">Cancelar</button>
                     <button type="button" class="btn primary" [disabled]="busy() || !draft().trim()" (click)="send(l)" title="Publica esta resposta no comentário, no Instagram">
@@ -113,7 +114,7 @@ const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL
             } @else {
               <div class="line">
                 <span class="actions">
-                  <button type="button" class="btn primary" [disabled]="!canRefresh()" (click)="openReply(l)" title="Escrever (ou pedir ao Claude) uma resposta pública ao comentário">Responder</button>
+                  <button type="button" class="btn primary" [disabled]="!canRefresh()" (click)="openReply(l)" title="Escrever (ou pedir à IA) uma resposta pública ao comentário">Responder</button>
                   @if (l.username) {
                     <a class="btn ghost" [href]="'https://ig.me/m/' + l.username" target="_blank" rel="noopener"
                        title="Abre o direct com esta pessoa no Instagram (a mensagem é escrita e enviada por você)">Abrir direct ↗</a>
@@ -190,6 +191,7 @@ export class LeadsPage {
   private api = inject(Api);
 
   readonly id = input.required<string>();
+  protected readonly ai = inject(Assistant);
 
   protected readonly tabs = TABS;
   protected readonly statuses = Object.keys(STATUS_LABELS) as LeadStatus[];

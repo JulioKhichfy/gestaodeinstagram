@@ -8,7 +8,7 @@ interface Row extends Pauta {
 }
 
 /**
- * Raio-X: conteúdo histórico em séries (linha do tempo, ídolos, jogos, gols, curiosidades…). O Claude sugere
+ * Raio-X: conteúdo histórico em séries (linha do tempo, ídolos, jogos, gols, curiosidades…). A IA sugere
  * pautas; as escolhidas viram rascunhos pelo gerador, com a regra de marcar [CONFERIR] onde houver dúvida.
  */
 @Component({
@@ -18,7 +18,7 @@ interface Row extends Pauta {
   template: `
     <section class="card">
       <h2>Raio-X</h2>
-      <p class="muted small">Escolha uma série. O Claude sugere pautas; marque as que quer e gere os posts. Datas, placares e nomes
+      <p class="muted small">Escolha uma série. A IA sugere pautas; marque as que quer e gere os posts. Datas, placares e nomes
         em dúvida saem com <strong>[CONFERIR]</strong>: cheque antes de publicar (a credibilidade da página depende disso).</p>
       <div class="series" role="radiogroup" aria-label="Série">
         @for (s of series(); track s) {
@@ -28,7 +28,7 @@ interface Row extends Pauta {
       </div>
       <div class="actions">
         <button type="button" class="btn primary" [disabled]="!serie() || busy()" (click)="suggest()"
-                title="O Claude sugere 8 pautas para a série escolhida (leva uns 20 s)">
+                title="A IA sugere 8 pautas para a série escolhida (leva uns 20 s)">
           @if (busy() === 'suggest') { <span class="spinner"></span> Pensando… } @else { Sugerir pautas }
         </button>
       </div>
@@ -53,7 +53,7 @@ interface Row extends Pauta {
         </ul>
         <div class="actions">
           <button type="button" class="btn primary" [disabled]="!checked() || busy()" (click)="generate()"
-                  title="Cria os rascunhos: Claude escreve, Jev revisa e guia a reescrita">
+                  title="Cria os rascunhos: A IA escreve, Jev revisa e guia a reescrita">
             @if (busy() === 'generate') { <span class="spinner"></span> } Gerar {{ checked() }} post(s)
           </button>
         </div>

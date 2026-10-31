@@ -16,6 +16,7 @@ import { SessionStore } from '../core/session';
       </a>
       <nav class="main-nav" aria-label="Principal">
         <a title="Compara as contas lado a lado e mostra os alertas" routerLink="/visao-geral" routerLinkActive="active">Visão geral</a>
+        <a title="Adicionar, remover e editar o perfil das contas do Instagram" routerLink="/contas" routerLinkActive="active">Contas</a>
         <a title="Explicações de cada função, métricas e dicas de algoritmo" routerLink="/ajuda" routerLinkActive="active">Ajuda</a>
         <a title="Pesos do score e limites dos alertas" routerLink="/configuracoes" routerLinkActive="active">Configurações</a>
         <button title="Sai do dashboard neste navegador" class="btn ghost" (click)="logout()">Sair</button>
@@ -33,6 +34,8 @@ import { SessionStore } from '../core/session';
           </span>
           <small>&#64;{{ a.username }}</small>
         </a>
+      } @empty {
+        <a class="tab" routerLink="/contas" title="Comece adicionando as contas do Instagram">＋ Adicionar contas</a>
       }
     </nav>
 

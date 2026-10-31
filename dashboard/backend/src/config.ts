@@ -42,18 +42,15 @@ export interface AccountConfig {
 /** Raiz do projeto (onde ficam as pastas das contas). */
 export const PROJECT_ROOT = path.resolve(import.meta.dirname, '..', '..', '..');
 
-// As contas ficam em backend/accounts.json, que é local e fica fora do Git (dados de clientes).
-// Sem ele, o dashboard sobe com o exemplo (accounts.example.json). ACCOUNTS_FILE troca o arquivo
-// (testes, ou uma conta de teste no .env); caminho relativo à pasta backend.
-const accountsFile =
-  (process.env.ACCOUNTS_FILE ? path.resolve(import.meta.dirname, '..', process.env.ACCOUNTS_FILE) : undefined) ??
-  [path.resolve(import.meta.dirname, '..', 'accounts.json'), path.resolve(import.meta.dirname, '..', 'accounts.example.json')].find((f) =>
-    fs.existsSync(f),
-  )!;
+// As contas ficam em backend/accounts.json, que é local e fica fora do Git (dados de clientes). Sem ele, o dashboard
+// começa sem contas e elas são adicionadas pela tela Contas (que grava esse arquivo). ACCOUNTS_FILE troca o arquivo
+// (testes, ou uma conta de teste no .env); caminho relativo à pasta backend. Modelo: accounts.example.json.
+export const ACCOUNTS_FILE_PATH = process.env.ACCOUNTS_FILE
+  ? path.resolve(import.meta.dirname, '..', process.env.ACCOUNTS_FILE)
+  : path.resolve(import.meta.dirname, '..', 'accounts.json');
 
-function loadAccounts(file: string): AccountConfig[] {
-  const list = JSON.parse(fs.readFileSync(file, 'utf8')) as AccountConfig[];
-  if (!Array.isArray(list) || !list.length) throw new Error(`${file}: informe ao menos uma conta.`);
+export function validateAccounts(list: AccountConfig[], file = ACCOUNTS_FILE_PATH): AccountConfig[] {
+  if (!Array.isArray(list)) throw new Error(`${file}: a lista de contas deve ser um array.`);
   for (const a of list) {
     if (!/^[a-z0-9-]{1,40}$/.test(a.id ?? '')) throw new Error(`${file}: id inválido "${a.id}" (use letras minúsculas, números e hífen).`);
     if (!a.username || !a.label || !a.folder) throw new Error(`${file}: a conta "${a.id}" precisa de label, username e folder.`);
@@ -68,10 +65,22 @@ function loadAccounts(file: string): AccountConfig[] {
       }
     }
   }
+  if (new Set(list.map((a) => a.id)).size !== list.length) throw new Error(`${file}: há contas com o mesmo id.`);
   return list;
 }
 
-export const ACCOUNTS: AccountConfig[] = loadAccounts(accountsFile);
+const loadAccounts = (file: string): AccountConfig[] =>
+  fs.existsSync(file) ? validateAccounts(JSON.parse(fs.readFileSync(file, 'utf8')) as AccountConfig[], file) : [];
+
+/** Lista viva: a tela Contas altera esta mesma lista (quem importou vê as mudanças). */
+export const ACCOUNTS: AccountConfig[] = loadAccounts(ACCOUNTS_FILE_PATH);
+
+/** Grava o arquivo de contas e atualiza a lista em memória. */
+export function saveAccounts(list: AccountConfig[]): void {
+  validateAccounts(list);
+  fs.writeFileSync(ACCOUNTS_FILE_PATH, JSON.stringify(list, null, 2) + '\n');
+  ACCOUNTS.splice(0, ACCOUNTS.length, ...list);
+}
 
 export const accountFolder = (a: AccountConfig) => path.resolve(PROJECT_ROOT, a.folder);
 
@@ -99,6 +108,11 @@ export const config = {
   claudeBin: env.CLAUDE_BIN ?? 'claude',
   /** Modelo opcional para o Claude Code; vazio = padrão da sua assinatura. */
   claudeModel: env.CLAUDE_MODEL ?? '',
+  /** Qual assinatura escreve os textos: "claude" (Claude Code) ou "chatgpt" (Codex CLI logado com o ChatGPT). */
+  aiProvider: (env.AI_PROVIDER === 'chatgpt' ? 'chatgpt' : 'claude') as 'claude' | 'chatgpt',
+  /** Executável do Codex CLI (ChatGPT) e modelo opcional (vazio = padrão da assinatura). */
+  codexBin: env.CODEX_BIN ?? 'codex',
+  codexModel: env.CODEX_MODEL ?? '',
   /** Jev (TypeSafe AI): avaliações rápidas e tipadas. Sem chave, as funções do Jev ficam desligadas. */
   typesafeApiKey: env.TYPESAFE_API_KEY ?? '',
   jevModel: env.JEV_MODEL || 'jev-latest',
@@ -110,6 +124,8 @@ export const config = {
   // DATA_DIR/MEDIA_DIR permitem que os testes usem pastas temporárias.
   dataDir: env.DATA_DIR ?? path.resolve(import.meta.dirname, '..', 'data'),
   mediaDir: env.MEDIA_DIR ?? path.resolve(import.meta.dirname, '..', 'media'),
+  /** Perfis (claude.md) das contas criadas pela tela Contas; vazio = pasta perfis/ na raiz do projeto. */
+  profilesDir: env.PROFILES_DIR ?? '',
 };
 
 export const redirectUri = () => `${config.publicBaseUrl}/api/instagram/callback`;

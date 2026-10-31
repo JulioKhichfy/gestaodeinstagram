@@ -74,6 +74,6 @@ describe('Central de Filmes', () => {
       ],
       true,
     );
-    expect(el.textContent).toContain('O Claude está escolhendo os títulos');
+    expect(el.textContent).toContain('A IA está escolhendo os títulos');
   });
 });

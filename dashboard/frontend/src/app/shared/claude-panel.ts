@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { Api, Artifact, ClaudeMessage, errorMessage } from '../core/api';
+import { Assistant } from '../core/assistant';
 import { CAPTION_MAX } from '../core/media-files';
 
 /** Pedidos cuja resposta vai para a legenda (os outros podem ser longos). */
@@ -65,8 +66,8 @@ export function listOptions(text: string): string[] {
 export const onlyHashtags = (text: string) => (text.match(/#[\p{L}\p{N}_]+/gu) ?? []).join(' ');
 
 /**
- * Campo "Pedir ao Claude": usa a assinatura do Claude da usuária (Claude Code no PC).
- * O Claude recebe o perfil da conta (claude.md), as métricas e o texto atual do artefato.
+ * Campo "Pedir ao assistente": usa a assinatura configurada no backend (AI_PROVIDER: Claude Code ou ChatGPT pelo Codex).
+ * O assistente recebe o perfil da conta (claude.md), as métricas e o texto atual do artefato.
  */
 @Component({
   selector: 'app-claude-panel',
@@ -75,7 +76,7 @@ export const onlyHashtags = (text: string) => (text.match(/#[\p{L}\p{N}_]+/gu) ?
     <section class="claude">
       <header>
         <span class="claude-mark" aria-hidden="true">✦</span>
-        <strong>Pedir ao Claude</strong>
+        <strong>Pedir ao {{ ai.name() }}</strong>
         <small class="muted">usa sua assinatura · conhece o perfil e as métricas da conta</small>
       </header>
 
@@ -96,8 +97,8 @@ export const onlyHashtags = (text: string) => (text.match(/#[\p{L}\p{N}_]+/gu) ?
         <small class="muted">
           @if (currentText().trim()) { O texto atual vai junto como contexto. } Ctrl+Enter envia.
         </small>
-        <button title="Envia o pedido ao Claude com o perfil da conta e o texto atual" type="button" class="btn primary" [disabled]="busy()" (click)="ask()">
-          @if (busy()) { <span class="spinner"></span> Escrevendo… } @else { Pedir ao Claude }
+        <button [title]="'Envia o pedido ao ' + ai.name() + ' com o perfil da conta e o texto atual'" type="button" class="btn primary" [disabled]="busy()" (click)="ask()">
+          @if (busy()) { <span class="spinner"></span> Escrevendo… } @else { Pedir ao {{ ai.name() }} }
         </button>
       </div>
 
@@ -122,7 +123,7 @@ export const onlyHashtags = (text: string) => (text.match(/#[\p{L}\p{N}_]+/gu) ?
             <div class="row end">
               <button title="Copia a resposta para colar onde quiser" type="button" class="btn ghost" (click)="copy(text)">{{ copied() ? 'Copiado!' : 'Copiar' }}</button>
               @if (tooLong()) {
-                <button title="Pede ao Claude para reduzir para até 1.500 caracteres" type="button" class="btn ghost" [disabled]="busy()" (click)="shorten()">Pedir versão mais curta</button>
+                <button title="Pede para reduzir para até 1.500 caracteres" type="button" class="btn ghost" [disabled]="busy()" (click)="shorten()">Pedir versão mais curta</button>
               }
               @if (answerArtifact() === 'hashtags') {
                 @if (hashtagsOf(text); as tags) {
@@ -139,10 +140,10 @@ export const onlyHashtags = (text: string) => (text.match(/#[\p{L}\p{N}_]+/gu) ?
 
       @if (history().length) {
         <details>
-          <summary>Histórico com o Claude ({{ history().length / 2 }})</summary>
+          <summary>Histórico com o {{ ai.name() }} ({{ history().length / 2 }})</summary>
           @for (m of history(); track m.id) {
             <div class="msg" [class.me]="m.role === 'user'">
-              <small class="muted">{{ m.role === 'user' ? 'Você' : 'Claude' }}</small>
+              <small class="muted">{{ m.role === 'user' ? 'Você' : ai.name() }}</small>
               <pre>{{ m.content }}</pre>
             </div>
           }
@@ -180,6 +181,8 @@ export class ClaudePanel {
   readonly artifacts = input<Artifact[]>(['legenda', 'ganchos', 'hashtags', 'melhorar', 'livre']);
   readonly initial = input<Artifact | null>(null);
   readonly use = output<ClaudeUse>();
+
+  protected readonly ai = inject(Assistant);
 
   protected readonly labels = ARTIFACT_LABELS;
   protected readonly help = ARTIFACT_HELP;

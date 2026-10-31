@@ -11,7 +11,7 @@ const FORMATS: GenKind[] = ['image', 'carousel', 'reel', 'story'];
 
 /**
  * Central de Filmes: cada linha = menu › opção (como os menus do IMDb, só como roteiro), formato e quantidade.
- * O Claude escolhe os títulos (manchetes atuais ou conhecimento próprio) e escreve sem spoilers; o Jev revisa.
+ * A IA escolhe os títulos (manchetes atuais ou conhecimento próprio) e escreve sem spoilers; o Jev revisa.
  * Só texto: nenhuma imagem é baixada.
  */
 @Component({
@@ -21,7 +21,7 @@ const FORMATS: GenKind[] = ['image', 'carousel', 'reel', 'story'];
   template: `
     <section class="card">
       <h2>Central de Filmes</h2>
-      <p class="muted small">Para cada linha, escolha o menu, a opção, o formato e a quantidade. O Claude escolhe os títulos
+      <p class="muted small">Para cada linha, escolha o menu, a opção, o formato e a quantidade. A IA escolhe os títulos
         (📰 = usa manchetes atuais; as demais usam o conhecimento dele) e escreve <strong>sem spoilers</strong>, dentro dos limites
         de caracteres; o Jev revisa. Nada é copiado do IMDb: os menus são só o roteiro.</p>
 
@@ -50,20 +50,20 @@ const FORMATS: GenKind[] = ['image', 'carousel', 'reel', 'story'];
           </div>
           <div class="foot">
             <button type="button" class="btn ghost" (click)="add()" title="Mais uma combinação de menu, formato e quantidade">＋ Adicionar linha</button>
-            <label class="check" title="Se a nota do Jev ficar abaixo de 75, o Claude reescreve seguindo as dicas dele (até 2 vezes)">
+            <label class="check" title="Se a nota do Jev ficar abaixo de 75, a IA reescreve seguindo as dicas dele (até 2 vezes)">
               <input type="checkbox" [checked]="rewrite()" (change)="rewrite.set($any($event.target).checked)" /> Reescrever até o Jev aprovar
             </label>
             <span class="spacer"></span>
             <span class="muted" [class.over]="total() > cat.maxPosts">{{ total() }} de no máximo {{ cat.maxPosts }} posts</span>
             <button type="button" class="btn primary" [disabled]="busy() || !total() || total() > cat.maxPosts" (click)="start()"
-                    title="O Claude escolhe os títulos e escreve; o Jev revisa. Tudo vira rascunho para você conferir.">
+                    title="A IA escolhe os títulos e escreve; o Jev revisa. Tudo vira rascunho para você conferir.">
               @if (busy()) { <span class="spinner"></span> Enviando… } @else { Gerar posts }
             </button>
           </div>
         } @else {
           @if (job(); as j) {
             @if (j.phase === 'planejando' && !j.done) {
-              <p><span class="spinner inline"></span> O Claude está escolhendo os títulos de cada linha…</p>
+              <p><span class="spinner inline"></span> A IA está escolhendo os títulos de cada linha…</p>
             }
             @if (j.error) { <p class="alert error">{{ j.error }}</p> }
             <ul class="progress">

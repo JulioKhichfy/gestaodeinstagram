@@ -26,12 +26,12 @@ export class AccountPage {
   readonly error = input<string>();
 
   private readonly allSections: { path: string; label: string; help: string; radar?: boolean; hub?: boolean }[] = [
-    { path: 'filmes', label: 'Central de Filmes', help: 'Escolha menus de cinema e séries, formatos e quantidades: o Claude escolhe os títulos e escreve, o Jev revisa', hub: true },
+    { path: 'filmes', label: 'Central de Filmes', help: 'Escolha menus de cinema e séries, formatos e quantidades: a IA escolhe os títulos e escreve, o Jev revisa', hub: true },
     { path: 'radar', label: 'Radar', help: 'Notícias quentes do tema, das fontes configuradas, com um clique para virar post', radar: true },
-    { path: 'raio-x', label: 'Raio-X', help: 'Séries de conteúdo histórico: o Claude sugere pautas e o gerador cria os posts', radar: true },
-    { path: 'publicar', label: 'Publicar', help: 'Monta e publica post, carrossel ou Reels (com Claude e Jev ajudando na legenda)' },
+    { path: 'raio-x', label: 'Raio-X', help: 'Séries de conteúdo histórico: a IA sugere pautas e o gerador cria os posts', radar: true },
+    { path: 'publicar', label: 'Publicar', help: 'Monta e publica post, carrossel ou Reels (com IA e Jev ajudando na legenda)' },
     { path: 'agenda', label: 'Agendados', help: 'O que vai ser publicado e quando; reagendar, publicar agora ou cancelar' },
-    { path: 'rascunhos', label: 'Rascunhos', help: 'Ideias e textos em preparo; "＋ Gerar posts" cria vários de uma vez com Claude + Jev' },
+    { path: 'rascunhos', label: 'Rascunhos', help: 'Ideias e textos em preparo; "＋ Gerar posts" cria vários de uma vez com IA + Jev' },
     { path: 'relatorios', label: 'Relatórios', help: 'Crescimento, alcance, melhores formatos, público e horários' },
     { path: 'posts', label: 'Posts e experimentos', help: 'Todos os posts com métricas; registre gancho e estilo para descobrir o que funciona' },
     { path: 'ciclos', label: 'Ciclos de 10 dias', help: 'Método de pesquisa, testes e análise em 10 dias' },

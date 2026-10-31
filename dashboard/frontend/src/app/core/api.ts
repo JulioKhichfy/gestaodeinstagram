@@ -9,7 +9,7 @@ export interface Account {
   folder: string;
   connected: boolean;
   tokenExpiresAt: number | null;
-  business: 'livros' | 'servicos' | 'loja' | 'conteudo';
+  business: BusinessType;
   /** Central temática: "filmes" = Central de Filmes. */
   hub?: 'filmes';
   /** Contas com Radar de assuntos (ex.: página de clube). */
@@ -51,6 +51,8 @@ export interface MediaItem {
 
 export interface ServerConfig {
   missing: string[];
+  /** Assistente configurado no backend: "Claude" ou "ChatGPT". */
+  assistant?: string;
   /** O que falta para publicar (endereço público); null = pode publicar. */
   publishMissing: string | null;
   /** Login do Instagram configurado (IG_APP_ID/SECRET + endereço https). */
@@ -353,6 +355,16 @@ export interface Pauta {
   theme: string;
   kind: GenKind;
   description: string;
+}
+
+// ---------- Contas (tela Contas) ----------
+
+export type BusinessType = 'livros' | 'servicos' | 'loja' | 'conteudo';
+
+export interface ContasView {
+  facebook: { name: string; expiresAt: number; connected: boolean } | null;
+  available: { igUserId: string; username: string; page?: string; added: boolean }[];
+  accounts: { id: string; label: string; username: string; business: BusinessType; connected: boolean; via: 'instagram' | 'facebook' | null }[];
 }
 
 // ---------- Agenda ----------
@@ -770,7 +782,26 @@ export class Api {
   facebookStatus() {
     return firstValueFrom(this.http.get<FacebookStatus>('/api/facebook/status'));
   }
-  facebookConnect(accountId: string, returnTo: 'conta' | 'descoberta' = 'descoberta') {
+  contas() {
+    return firstValueFrom(this.http.get<ContasView>('/api/contas'));
+  }
+  addConta(body: { username: string; label?: string; business: BusinessType }) {
+    return firstValueFrom(this.http.post<{ connected: boolean }>('/api/contas', body));
+  }
+  updateConta(id: string, body: { label?: string; business?: BusinessType }) {
+    return firstValueFrom(this.http.patch<void>(`/api/contas/${id}`, body));
+  }
+  removeConta(id: string) {
+    return firstValueFrom(this.http.delete<void>(`/api/contas/${id}`));
+  }
+  contaPerfil(id: string) {
+    return firstValueFrom(this.http.get<{ text: string }>(`/api/contas/${id}/perfil`));
+  }
+  saveContaPerfil(id: string, text: string) {
+    return firstValueFrom(this.http.put<void>(`/api/contas/${id}/perfil`, { text }));
+  }
+
+  facebookConnect(accountId: string, returnTo: 'conta' | 'descoberta' | 'contas' = 'descoberta') {
     return firstValueFrom(this.http.post<{ url: string }>('/api/facebook/connect', { accountId, returnTo }));
   }
   facebookDisconnect() {

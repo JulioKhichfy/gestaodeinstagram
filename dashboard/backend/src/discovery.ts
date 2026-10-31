@@ -37,7 +37,8 @@ export interface DiscoveryConn {
   viaAccountId: string;
 }
 
-const OWN_USERNAMES = new Set(ACCOUNTS.map((a) => a.username.toLowerCase()));
+/** As contas do próprio dashboard (a lista pode mudar pela tela Contas). */
+const ownUsernames = () => new Set(ACCOUNTS.map((a) => a.username.toLowerCase()));
 const USERNAME_RE = /^[a-z0-9._]{1,30}$/;
 
 /** "Decoração Afetiva!" -> "decoracaoafetiva" (minúsculo, sem acento, sem espaço nem pontuação). */
@@ -256,7 +257,7 @@ export function ownHashtagWeights(db: DatabaseSync, accountId: string): Map<stri
 /** Perfis que a própria conta já mencionou nas legendas (fora as contas do próprio dashboard). */
 export function ownMentions(db: DatabaseSync, accountId: string): Map<string, number> {
   const rows = db.prepare('SELECT caption FROM media WHERE account_id = ?').all(accountId) as { caption: string | null }[];
-  return countBy(rows.flatMap((r) => [...new Set(extractMentions(r.caption))]).filter((u) => !OWN_USERNAMES.has(u)));
+  return countBy(rows.flatMap((r) => [...new Set(extractMentions(r.caption))]).filter((u) => !ownUsernames().has(u)));
 }
 
 export function computeAffinity(
@@ -429,7 +430,7 @@ export async function searchHashtag(
   // Perfis: a Meta não devolve o autor, então usamos as @menções das legendas, das mais citadas para as menos.
   const unique = new Map([...top, ...recent].map((m) => [m.id, m]));
   const mentions = [...countBy([...unique.values()].flatMap((m) => [...new Set(extractMentions(m.caption))]))]
-    .filter(([u]) => !OWN_USERNAMES.has(u))
+    .filter(([u]) => !ownUsernames().has(u))
     .sort((a, b) => b[1] - a[1])
     .slice(0, 30)
     .map(([u]) => u);
@@ -496,7 +497,7 @@ export async function addToWatchlist(
 ): Promise<DiscoveredProfile> {
   const username = normalizeUsername(input);
   if (!username) throw new DiscoveryError(400, 'Username inválido. Use o @ do perfil ou o link dele.');
-  if (OWN_USERNAMES.has(username)) throw new DiscoveryError(400, 'Esta é uma das suas contas.');
+  if (ownUsernames().has(username)) throw new DiscoveryError(400, 'Esta é uma das suas contas.');
   upsertCandidate(db, accountId, username, { source: 'manual', watch: true }, now);
   db.prepare(`UPDATE discovered_profiles SET status = 'salvo', updated_at = ? WHERE account_id = ? AND username = ? AND status = 'novo'`).run(
     now,
