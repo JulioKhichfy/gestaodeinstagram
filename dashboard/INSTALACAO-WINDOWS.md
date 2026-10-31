@@ -149,6 +149,13 @@ da análise da Meta. Faça tudo no computador, com o seu Facebook.
 
 ## Parte 5. Configurar
 
+**Jeito rápido:** na pasta `dashboard`, dê dois cliques em **`configurar.cmd`**. Um menu pergunta cada valor (ID e chave
+do app da Meta, chave do Jev, assistente ChatGPT ou Claude, bancos de imagem), grava no `backend\.env`, **testa cada
+chave na hora** (avisa, por exemplo, se a chave secreta foi copiada pela metade), faz o login do assistente e confere
+se os programas da Parte 1 estão instalados. Se usar o menu, pule para a Parte 6.
+
+**Jeito manual:**
+
 1. Na pasta `dashboard`, dê **dois cliques em `iniciar.cmd`**. Na primeira vez ele cria o arquivo de configuração
    `backend\.env` e avisa. Feche a janela.
 2. Abra o VS Code › **Arquivo** › **Abrir pasta** › escolha `Documentos\gestaodeinstagram\dashboard`.
