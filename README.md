@@ -1,5 +1,9 @@
 # Dashboard de gestão de contas do Instagram
 
+> **Versão de cliente (branch `client_ff`).** Instalação limpa, sem contas pré-cadastradas: siga o
+> [passo a passo para Windows](dashboard/INSTALACAO-WINDOWS.md) e adicione as suas contas pela tela **Contas**.
+> O assistente padrão é o ChatGPT (Codex); para usar o Claude, troque `AI_PROVIDER` no `backend/.env`.
+
 Painel para publicar e acompanhar várias contas profissionais do Instagram usando só a API oficial da Meta:
 
 - Publicação de posts, carrosséis (até 20 itens) e Reels, inclusive Trial Reels
