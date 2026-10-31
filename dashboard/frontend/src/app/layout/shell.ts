@@ -17,6 +17,7 @@ import { SessionStore } from '../core/session';
       <nav class="main-nav" aria-label="Principal">
         <a title="Compara as contas lado a lado e mostra os alertas" routerLink="/visao-geral" routerLinkActive="active">Visão geral</a>
         <a title="Adicionar, remover e editar o perfil das contas do Instagram" routerLink="/contas" routerLinkActive="active">Contas</a>
+        <a title="Editar vídeos e imagens escrevendo o que quer (sem VS Code) e guia do Kdenlive" routerLink="/estudio" routerLinkActive="active">Estúdio</a>
         <a title="Explicações de cada função, métricas e dicas de algoritmo" routerLink="/ajuda" routerLinkActive="active">Ajuda</a>
         <a title="Pesos do score e limites dos alertas" routerLink="/configuracoes" routerLinkActive="active">Configurações</a>
         <button title="Sai do dashboard neste navegador" class="btn ghost" (click)="logout()">Sair</button>

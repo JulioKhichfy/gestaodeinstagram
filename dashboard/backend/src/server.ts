@@ -16,6 +16,7 @@ import { movieRoutes } from './routes-movies.ts';
 import { accountAdmin } from './routes-accounts.ts';
 import { radarRoutes } from './routes-radar.ts';
 import { scheduleRoutes } from './routes-schedule.ts';
+import { studioRoutes } from './routes-studio.ts';
 import { PublishError, publishFor } from './schedule.ts';
 import { assistantName } from './claude.ts';
 import { v2 } from './routes-v2.ts';
@@ -281,6 +282,7 @@ api.use(auth.requireSession, leadsRoutes());
 api.use(auth.requireSession, radarRoutes());
 api.use(auth.requireSession, movieRoutes());
 api.use(auth.requireSession, scheduleRoutes());
+api.use(auth.requireSession, studioRoutes());
 
 // Rotas da versão 2 (relatórios, experimentos, ciclos, rascunhos, Claude, tráfego pago).
 api.use(auth.requireSession, v2);
