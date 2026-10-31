@@ -367,6 +367,49 @@ export interface ContasView {
   accounts: { id: string; label: string; username: string; business: BusinessType; connected: boolean; via: 'instagram' | 'facebook' | null }[];
 }
 
+// ---------- Estúdio ----------
+
+export interface StudioCaps {
+  ffmpeg: string | null;
+  whisper: boolean;
+  subtitles: boolean;
+  drawtext: boolean;
+  models: string[];
+  download: Record<'base' | 'small', { received: number; total: number; done: boolean; error?: string } | null>;
+}
+
+export interface StudioFile {
+  path: string;
+  name: string;
+  kind: 'video' | 'imagem' | 'audio' | 'legenda';
+  size: number;
+  duration?: number;
+  width?: number;
+  height?: number;
+  audio?: boolean;
+}
+
+export interface StudioPlanView {
+  id: string;
+  outDir: string;
+  problems: string[];
+  plan: {
+    resumo: string;
+    passos: { descricao: string; tipo: 'ffmpeg' | 'arquivo'; args?: string[]; nome?: string; conteudo?: string }[];
+    avisos: string[];
+    kdenlive: string;
+  };
+}
+
+export interface StudioJob {
+  id: string;
+  outDir: string;
+  steps: { descricao: string; status: 'fila' | 'rodando' | 'ok' | 'erro'; log?: string }[];
+  outputs: string[];
+  done: boolean;
+  error?: string;
+}
+
 // ---------- Agenda ----------
 
 export type ScheduleStatus = 'agendado' | 'publicando' | 'publicado' | 'falhou' | 'cancelado';
@@ -782,6 +825,28 @@ export class Api {
   facebookStatus() {
     return firstValueFrom(this.http.get<FacebookStatus>('/api/facebook/status'));
   }
+  studioCaps() {
+    return firstValueFrom(this.http.get<StudioCaps>('/api/estudio/capacidades'));
+  }
+  studioFiles(paths: string[]) {
+    return firstValueFrom(this.http.post<{ files: StudioFile[]; errors: string[] }>('/api/estudio/arquivos', { paths }));
+  }
+  studioPlan(arquivos: string[], pedido: string) {
+    return firstValueFrom(this.http.post<StudioPlanView>('/api/estudio/planejar', { arquivos, pedido }));
+  }
+  studioRun(planId: string) {
+    return firstValueFrom(this.http.post<StudioJob>('/api/estudio/executar', { planId }));
+  }
+  studioJob(id: string) {
+    return firstValueFrom(this.http.get<StudioJob>(`/api/estudio/trabalhos/${id}`));
+  }
+  studioOpen(path: string) {
+    return firstValueFrom(this.http.post<void>('/api/estudio/abrir', { path }));
+  }
+  studioModel(tamanho: 'base' | 'small') {
+    return firstValueFrom(this.http.post<void>('/api/estudio/modelo', { tamanho }));
+  }
+
   contas() {
     return firstValueFrom(this.http.get<ContasView>('/api/contas'));
   }

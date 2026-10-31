@@ -113,6 +113,9 @@ export const config = {
   /** Executável do Codex CLI (ChatGPT) e modelo opcional (vazio = padrão da assinatura). */
   codexBin: env.CODEX_BIN ?? 'codex',
   codexModel: env.CODEX_MODEL ?? '',
+  /** FFmpeg e FFprobe do Estúdio (edição de vídeo e imagem); vazio = os do PATH. */
+  ffmpegBin: env.FFMPEG_BIN || 'ffmpeg',
+  ffprobeBin: env.FFPROBE_BIN || 'ffprobe',
   /** Jev (TypeSafe AI): avaliações rápidas e tipadas. Sem chave, as funções do Jev ficam desligadas. */
   typesafeApiKey: env.TYPESAFE_API_KEY ?? '',
   jevModel: env.JEV_MODEL || 'jev-latest',

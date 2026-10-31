@@ -12,7 +12,8 @@ Leva de 40 minutos a 1 hora na primeira vez. Depois, o dia a dia é **dois cliqu
 |---|---|---|
 | Git | Baixar e atualizar o dashboard | Grátis |
 | Node.js 24 | Rodar o dashboard | Grátis |
-| Visual Studio Code | Editar a configuração e, se quiser, editar vídeos com a IA | Grátis |
+| FFmpeg | Editar vídeos e imagens na página Estúdio | Grátis |
+| Kdenlive (opcional) | Acabamento fino de vídeo e ajuste de legendas | Grátis |
 | cloudflared | Túnel: a Meta baixa daqui as fotos e vídeos na hora de publicar | Grátis |
 | Codex (ChatGPT) **ou** Claude Code | O assistente que escreve legendas, roteiros e respostas | Sua assinatura do ChatGPT ou do Claude |
 | Instagram profissional + Página do Facebook | Exigência da Meta para gerenciar a conta por um sistema | Grátis |
@@ -29,8 +30,9 @@ Leva de 40 minutos a 1 hora na primeira vez. Depois, o dia a dia é **dois cliqu
 ```powershell
 winget install -e --id Git.Git
 winget install -e --id OpenJS.NodeJS.LTS --version 24.22.1
-winget install -e --id Microsoft.VisualStudioCode
 winget install -e --id Cloudflare.cloudflared
+winget install -e --id Gyan.FFmpeg
+winget install -e --id KDE.Kdenlive
 ```
 
 3. **Feche o PowerShell e abra de novo** (para ele enxergar os programas novos) e confira:
@@ -39,6 +41,7 @@ winget install -e --id Cloudflare.cloudflared
 git --version
 node -v
 cloudflared --version
+ffmpeg -version
 ```
 
 `node -v` deve mostrar algo começando com **v24**. O dashboard foi testado no Node 24; não use o 26 por enquanto.
@@ -158,8 +161,9 @@ se os programas da Parte 1 estão instalados. Se usar o menu, pule para a Parte 
 
 1. Na pasta `dashboard`, dê **dois cliques em `iniciar.cmd`**. Na primeira vez ele cria o arquivo de configuração
    `backend\.env` e avisa. Feche a janela.
-2. Abra o VS Code › **Arquivo** › **Abrir pasta** › escolha `Documentos\gestaodeinstagram\dashboard`.
-3. Abra `backend\.env` e preencha:
+2. Abra a pasta `Documentos\gestaodeinstagram\dashboard\backend`, clique com o botão direito em `.env` ›
+   **Abrir com** › **Bloco de Notas**.
+3. Preencha:
 
 ```
 FB_APP_ID=o ID do app (Parte 4.4)
@@ -221,39 +225,41 @@ npm install
 
 - Todas as funções estão explicadas em **Ajuda** (menu de cima) e nas dicas ao passar o mouse.
 
-## Parte 8. Editar vídeos e imagens com a IA (Kdenlive + VS Code)
+## Parte 8. Editar vídeos e imagens no Estúdio (sem VS Code)
 
-O Codex (ChatGPT) e o Claude Code também funcionam **dentro do VS Code**: você pede em português e a IA executa
-comandos de edição de vídeo e imagem (com o FFmpeg) na pasta que você abriu. O **Kdenlive** fica para o acabamento
-visual (linha do tempo, transições, trilha, textos).
-
-### Instalar
-
-No PowerShell:
-
-```powershell
-winget install -e --id KDE.Kdenlive
-winget install -e --id Gyan.FFmpeg
-```
-
-No VS Code: ícone de **Extensões** (ou Ctrl+Shift+X) › procure **Codex** (da **OpenAI**) › **Instalar** › entre com o
-ChatGPT. Quando migrar para o Claude, instale a extensão **Claude Code** (da **Anthropic**).
+O dashboard tem a página **Estúdio** (menu de cima). Ela usa o **FFmpeg** (instalado na Parte 1) para editar e o seu
+assistente (ChatGPT ou Claude) para entender o pedido. O **Kdenlive** fica para o acabamento visual (linha do tempo,
+transições, ajuste fino das legendas); o próprio Estúdio tem um guia do que cada recurso do Kdenlive faz.
 
 ### Como usar
 
 1. Crie uma pasta para cada vídeo (ex.: `Documentos\Videos\lancamento`) e coloque nela os arquivos brutos.
-2. No VS Code: **Arquivo** › **Abrir pasta** › essa pasta. Abra o painel do **Codex** (ícone na barra lateral).
-3. Peça o que quer, por exemplo:
-   - "Corte o video.mp4 de 00:05 até 00:40 e deixe vertical 1080x1920 com fundo desfocado. Salve como reels.mp4."
-   - "Junte clip1.mp4, clip2.mp4 e clip3.mp4 nessa ordem, com a musica.mp3 baixinha no fundo."
-   - "Comprima o reels.mp4 para menos de 50 MB sem perder qualidade visível."
-   - "Tire um quadro do segundo 3 do reels.mp4 para usar de capa (JPEG 1080x1920)."
-   - "Transforme todas as fotos desta pasta em 1080x1350 (4:5) para carrossel, sem distorcer."
-4. A IA mostra o comando antes de executar: confira e **aprove**. Os arquivos novos aparecem na pasta.
-5. Para acabamento, abra o resultado no **Kdenlive**, edite e exporte em **Projeto › Renderizar**: MP4 (H.264),
-   1080x1920, 30 qps. Depois é só subir em **Publicar › Reels** no dashboard.
+2. No Explorador de Arquivos, clique com o botão direito na pasta › **Copiar como caminho**.
+3. No dashboard: **Estúdio** › cole o caminho (um por linha, pode ser mais de uma pasta) › **Carregar arquivos** ›
+   marque os arquivos que vão entrar.
+4. Escreva o que quer, ou clique numa receita (Reels vertical, Cortar trecho, Juntar vídeos, Legendas, Música de fundo,
+   Comprimir, Capa, Fotos para carrossel…). Exemplos:
+   - "Corte de 00:05 até 00:40 e deixe vertical 1080x1920 com fundo desfocado."
+   - "Junte os 3 vídeos nessa ordem, com a música baixinha no fundo."
+   - "Coloque estas legendas no vídeo: …" (cole o texto)
+5. **Planejar edição**: o assistente monta o plano. Confira os passos (dá para ver o comando exato) e clique em
+   **Executar**. Nada roda antes disso.
+6. Os arquivos prontos ficam na pasta **`editados`**, dentro da pasta dos originais (botão **Abrir pasta editados**).
+   Os originais nunca são alterados e nada é sobrescrito.
+7. Suba o resultado em **Publicar › Reels** (ou carrossel, Story).
 
-Dica: peça sempre "salve com outro nome" para nunca perder o original.
+### Legendas
+
+- **Do seu texto:** receita "Legendas do meu texto".
+- **Do que é falado (automática):** aparece no Estúdio quando o FFmpeg instalado tem o reconhecimento de fala; na
+  primeira vez, clique em **baixar** para trazer o modelo de português (466 MB, uma vez só).
+- **Se a automática não aparecer:** no Kdenlive, use a **Legendagem automática** (veja "Legendas" no guia do Estúdio),
+  exporte o `.srt` para a mesma pasta do vídeo e peça no Estúdio: "queime a legenda legendas.srt no vídeo".
+
+### Acabamento no Kdenlive
+
+Abra o arquivo da pasta `editados` no Kdenlive, edite e exporte em **Projeto › Renderizar**: MP4 (H.264), 1080x1920,
+30 qps. O guia na página do Estúdio explica cada recurso (legendas, cortes, títulos, efeitos, áudio, exportar).
 
 ## Problemas comuns
 
@@ -265,6 +271,8 @@ Dica: peça sempre "salve com outro nome" para nunca perder o original.
 | "Codex não está logado" ou "Claude Code não está logado" | Rode `codex` (ou `claude`) no PowerShell e entre de novo |
 | Nenhuma conta aparece em Contas | Parte 4.3 (vínculo com a Página) e "Editar acesso" na janela do Facebook |
 | "Publicar está desligado" | A janela preta precisa estar aberta; se o túnel falhou, feche e abra o `iniciar.cmd` de novo |
+| Estúdio: "O FFmpeg não está instalado" | Rode `winget install -e --id Gyan.FFmpeg`, feche e abra o `iniciar.cmd` de novo |
+| Estúdio: "Este plano não pode ser executado" | Peça de novo com mais detalhes (nomes dos arquivos, tempos); o plano só pode usar os arquivos marcados |
 | "Porta em uso" ao abrir | Já existe um dashboard aberto: feche as janelas pretas e abra de novo |
 | Erro do Facebook sobre o app ("app não disponível", "URL bloqueada") | Confira o ID e a chave no `.env` (Parte 4.4, passo 4) e se o app está em Desenvolvimento; entre com o mesmo Facebook que criou o app |
 | Erro de permissões ("Invalid Scopes") ao entrar com o Facebook | Crie a configuração do aviso da Parte 4.4 e coloque o ID em `FB_CONFIG_ID` |

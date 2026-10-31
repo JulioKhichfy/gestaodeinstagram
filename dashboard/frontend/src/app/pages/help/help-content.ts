@@ -342,6 +342,38 @@ export const HELP: HelpSection[] = [
     ],
   },
   {
+    id: 'estudio',
+    title: 'Estúdio: editar vídeos e imagens',
+    intro:
+      'No menu Estúdio: cole o caminho da pasta com os vídeos e fotos, marque os arquivos, escreva o que quer (ou clique numa receita) e clique em Planejar edição. A IA monta os comandos do FFmpeg; você confere e clica em Executar. Os originais nunca são alterados.',
+    items: [
+      {
+        q: 'O que preciso instalar?',
+        a: [
+          'Só o FFmpeg (o programa que edita). No PowerShell: winget install -e --id Gyan.FFmpeg. Depois feche e abra o dashboard.',
+          'O Kdenlive é opcional, para acabamento fino (efeitos, transições, ajustar legenda palavra por palavra). Não precisa de VS Code.',
+        ],
+      },
+      {
+        q: 'Como colocar legendas?',
+        a: [
+          '- Do seu texto: receita "Legendas do meu texto", cole o texto; o Estúdio cria o .srt e queima no vídeo.',
+          '- Do que é falado: se aparecer "legenda automática disponível", use a receita "Legendas automáticas" (o modelo de fala é baixado uma vez, 466 MB).',
+          '- Se não estiver disponível: no Kdenlive, use a Legendagem automática (veja o guia no Estúdio), exporte o .srt para a mesma pasta e peça "queime a legenda legendas.srt no vídeo".',
+          'Letras grandes, brancas com contorno preto e longe da parte de baixo: os botões do Instagram cobrem o rodapé.',
+        ],
+      },
+      {
+        q: 'Onde ficam os arquivos prontos?',
+        a: ['Na pasta "editados", dentro da pasta dos originais. O botão "Abrir pasta editados" abre no Explorador. O Estúdio nunca sobrescreve: se já existir um arquivo com o mesmo nome, ele para e avisa.'],
+      },
+      {
+        q: 'É seguro?',
+        a: ['O Estúdio só roda o FFmpeg, sem terminal, só com os arquivos que você escolheu e só grava na pasta "editados". Planos que tentem outra coisa são recusados e não executam.'],
+      },
+    ],
+  },
+  {
     id: 'filmes',
     title: 'Central de Filmes',
     intro:

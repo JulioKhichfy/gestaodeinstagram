@@ -157,7 +157,7 @@ function Show-Programs {
     @{ Name = 'cloudflared'; Label = 'cloudflared'; Args = '--version'; Need = $true },
     @{ Name = 'codex'; Label = 'Codex'; Args = '--version'; Need = ((Get-EnvValue 'AI_PROVIDER') -eq 'chatgpt') },
     @{ Name = 'claude'; Label = 'Claude Code'; Args = '--version'; Need = ((Get-EnvValue 'AI_PROVIDER') -ne 'chatgpt') },
-    @{ Name = 'ffmpeg'; Label = 'FFmpeg'; Args = '-version'; Need = $false }
+    @{ Name = 'ffmpeg'; Label = 'FFmpeg'; Args = '-version'; Need = $true }
   )
   foreach ($c in $checks) {
     $cmd = Get-Command $c.Name -ErrorAction SilentlyContinue
