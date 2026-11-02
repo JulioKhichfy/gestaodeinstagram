@@ -140,3 +140,29 @@ describe('rotas', () => {
     assert.equal(appDb.prepare('SELECT COUNT(*) AS n FROM scheduled_posts').get()!.n, 1);
   });
 });
+
+describe('antes de publicar', () => {
+  it('confere pelo endereço público se a Meta consegue baixar a mídia', async () => {
+    const original = config.publicBaseUrl;
+    const server = express().use('/media', express.static(config.mediaDir)).listen(0);
+    if (!server.listening) await new Promise((ok) => server.once('listening', ok));
+    try {
+      config.publicBaseUrl = `http://localhost:${(server.address() as AddressInfo).port}`;
+      assert.equal(await S.mediaReachable([media('pronto.mp4')]), null);
+      assert.match((await S.mediaReachable(['sumiu.mp4']))!, /não está mais no servidor/);
+      config.publicBaseUrl = 'http://localhost:1';
+      assert.match((await S.mediaReachable([media('pronto.mp4')]))!, /não responde.*túnel/);
+    } finally {
+      config.publicBaseUrl = original;
+      server.close();
+    }
+  });
+
+  it('erro de processamento da Meta vira orientação', async () => {
+    const { processingError } = await import('../src/instagram.ts');
+    const msg = processingError('Error: Media upload has failed with error code 2207077');
+    assert.match(msg, /2207077/);
+    assert.match(msg, /túnel/);
+    assert.match(msg, /H\.264/);
+  });
+});

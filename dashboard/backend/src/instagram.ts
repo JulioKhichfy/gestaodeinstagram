@@ -326,6 +326,19 @@ export function createContainer(igUserId: string, auth: Auth, params: Record<str
   return call<{ id: string }>(graph(auth, `${igUserId}/media`), form({ ...params, access_token: auth.token }));
 }
 
+/**
+ * A Meta devolve só "Error: Media upload has failed with error code 22070xx", muitas vezes sem documentação do código.
+ * Na prática são duas causas: não conseguiu baixar o arquivo, ou o vídeo está fora do padrão. Diz o que conferir.
+ */
+export function processingError(status: string): string {
+  return (
+    `Instagram não conseguiu processar a mídia (${status}). Confira: (1) o túnel estava ligado durante todo o envio ` +
+    '(vídeos grandes demoram para a Meta baixar); (2) o vídeo é MP4 com H.264 e áudio AAC, até 300 MB, de 3 s a 15 min, ' +
+    'até 1920 px de largura e até 60 qps. Se o túnel estiver ok e repetir, gere uma versão nova no Estúdio ' +
+    '(receita "Reels vertical" ou "Comprimir") e publique o arquivo da pasta editados.'
+  );
+}
+
 export async function waitUntilReady(containerId: string, auth: Auth, timeoutMs = 10 * 60 * 1000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
@@ -333,9 +346,7 @@ export async function waitUntilReady(containerId: string, auth: Auth, timeoutMs 
       withToken(`${graph(auth, containerId)}?fields=status_code,status`, auth.token),
     );
     if (r.status_code === 'FINISHED' || r.status_code === 'PUBLISHED') return;
-    if (r.status_code === 'ERROR' || r.status_code === 'EXPIRED') {
-      throw new InstagramError(`Instagram não conseguiu processar a mídia (${r.status ?? r.status_code}).`);
-    }
+    if (r.status_code === 'ERROR' || r.status_code === 'EXPIRED') throw new InstagramError(processingError(r.status ?? r.status_code));
     await sleep(5000);
   }
   throw new InstagramError('Tempo esgotado esperando o Instagram processar a mídia.');
