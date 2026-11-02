@@ -358,8 +358,8 @@ export const HELP: HelpSection[] = [
         q: 'Como colocar legendas?',
         a: [
           '- Do seu texto: receita "Legendas do meu texto", cole o texto; o Estúdio cria o .srt e queima no vídeo.',
-          '- Do que é falado: se aparecer "legenda automática disponível", use a receita "Legendas automáticas" (o modelo de fala é baixado uma vez, 466 MB).',
-          '- Se não estiver disponível: no Kdenlive, use a Legendagem automática (veja o guia no Estúdio), exporte o .srt para a mesma pasta e peça "queime a legenda legendas.srt no vídeo".',
+          '- Do que é falado: no topo do Estúdio, clique em "baixar" o modelo de fala (466 MB, uma vez). Depois use a receita "Legendas automáticas" e confira os nomes próprios.',
+          '- Se aparecer "use o Kdenlive": o FFmpeg instalado é a versão Essentials. Instale a completa (winget install -e --id Gyan.FFmpeg) ou use a Legendagem automática do Kdenlive (precisa do Python; veja o guia no Estúdio), exporte o .srt para a mesma pasta e peça "queime a legenda legendas.srt no vídeo".',
           'Letras grandes, brancas com contorno preto e longe da parte de baixo: os botões do Instagram cobrem o rodapé.',
         ],
       },

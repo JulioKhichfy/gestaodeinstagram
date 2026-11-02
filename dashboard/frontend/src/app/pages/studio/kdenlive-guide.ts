@@ -21,7 +21,7 @@ export const KDENLIVE_GUIDE: KdenliveSection[] = [
       {
         name: 'Legendagem automática (fala para texto)',
         what: 'O Kdenlive escuta o vídeo e escreve as legendas sozinho, em português, com os tempos certos. Depois é só corrigir as palavras.',
-        where: 'Configure uma vez em Configurações › Configurar Kdenlive › Fala para texto (escolha Whisper e baixe o modelo de português). Depois: abra a faixa de legendas › ícone de reconhecimento de fala › escolha o modelo › Processar.',
+        where: 'Precisa do Python instalado (python.org, marcando "Add python.exe to PATH"). Configure uma vez em Configurações › Configurar Kdenlive › Plugins (em versões antigas, "Fala para texto"): escolha Whisper › Instalar dependências (uns 2 GB) › baixe um modelo. Depois: abra a faixa de legendas › ícone de reconhecimento de fala › escolha o modelo › Processar.',
       },
       {
         name: 'Faixa de legendas',
