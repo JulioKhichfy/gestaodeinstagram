@@ -3,8 +3,9 @@
 Este guia é para quem vai **usar** o dashboard no próprio computador, mesmo sem experiência com programação.
 Leva de 40 minutos a 1 hora na primeira vez. Depois, o dia a dia é **dois cliques** num atalho.
 
-> **Não precisa de Java.** O dashboard usa Node.js (o motor), Git (para baixar e atualizar), um túnel (para publicar)
-> e um assistente de IA (ChatGPT ou Claude, pela sua própria assinatura).
+> **Não precisa de Java nem de VS Code.** O dashboard usa Node.js (o motor), Git (para baixar e atualizar), um túnel
+> (para publicar), o FFmpeg (para editar vídeos e imagens) e um assistente de IA (ChatGPT ou Claude, pela sua própria
+> assinatura).
 
 ## O que você vai precisar
 
@@ -12,8 +13,9 @@ Leva de 40 minutos a 1 hora na primeira vez. Depois, o dia a dia é **dois cliqu
 |---|---|---|
 | Git | Baixar e atualizar o dashboard | Grátis |
 | Node.js 24 | Rodar o dashboard | Grátis |
-| FFmpeg | Editar vídeos e imagens na página Estúdio | Grátis |
+| FFmpeg | Editar vídeos e imagens na página Estúdio, com legenda automática | Grátis |
 | Kdenlive (opcional) | Acabamento fino de vídeo e ajuste de legendas | Grátis |
+| Python (opcional) | Só para a legenda automática **dentro do Kdenlive** | Grátis |
 | cloudflared | Túnel: a Meta baixa daqui as fotos e vídeos na hora de publicar | Grátis |
 | Codex (ChatGPT) **ou** Claude Code | O assistente que escreve legendas, roteiros e respostas | Sua assinatura do ChatGPT ou do Claude |
 | Instagram profissional + Página do Facebook | Exigência da Meta para gerenciar a conta por um sistema | Grátis |
@@ -45,6 +47,9 @@ ffmpeg -version
 ```
 
 `node -v` deve mostrar algo começando com **v24**. O dashboard foi testado no Node 24; não use o 26 por enquanto.
+
+Sobre o FFmpeg: o pacote `Gyan.FFmpeg` é a versão **completa**, que já sabe transformar fala em legenda. Não troque pela
+versão "Essentials": ela é menor, mas não tem a legenda automática.
 
 ## Parte 2. Baixar o dashboard
 
@@ -213,6 +218,8 @@ Se uma conta não aparecer: confira a Parte 4.3, entre de novo e use "Editar ace
 - **Publicar e agendar** só funcionam com a janela preta aberta. Posts agendados saem no horário se o notebook
   estiver ligado com o dashboard aberto; se não estiver, ficam como "Falhou" e você publica com um clique depois
   (aba **Agendados**).
+- **Editar vídeos e imagens:** menu **Estúdio** (Parte 8). Funciona mesmo sem internet para a Meta; só precisa do
+  dashboard aberto e do assistente de IA para montar o plano.
 - **A cada ~60 dias** a Meta pede para entrar de novo: **Contas** › **Entrar de novo**.
 - **Atualizar o dashboard** quando houver novidade: feche a janela preta e, no PowerShell,
 
@@ -251,10 +258,18 @@ transições, ajuste fino das legendas); o próprio Estúdio tem um guia do que 
 ### Legendas
 
 - **Do seu texto:** receita "Legendas do meu texto".
-- **Do que é falado (automática):** aparece no Estúdio quando o FFmpeg instalado tem o reconhecimento de fala; na
-  primeira vez, clique em **baixar** para trazer o modelo de português (466 MB, uma vez só).
-- **Se a automática não aparecer:** no Kdenlive, use a **Legendagem automática** (veja "Legendas" no guia do Estúdio),
-  exporte o `.srt` para a mesma pasta do vídeo e peça no Estúdio: "queime a legenda legendas.srt no vídeo".
+- **Do que é falado (automática):** com o FFmpeg da Parte 1, o topo do Estúdio mostra "legenda automática: falta o
+  modelo". Clique em **baixar** uma vez (466 MB, modelo de português). Depois aparece a receita
+  **Legendas automáticas**: ela escreve o que é falado e coloca no vídeo. Sempre confira os nomes próprios.
+- **Pelo Kdenlive (alternativa, ou para corrigir palavra por palavra):** a legenda automática do Kdenlive precisa do
+  **Python**. Instale uma vez:
+  1. Baixe o Python em **python.org** › Downloads › Windows. Na primeira tela do instalador, marque
+     **Add python.exe to PATH** e clique em **Install Now**.
+  2. No Kdenlive: **Configurações** › **Configurar Kdenlive** › **Plugins** (em versões antigas, "Fala para texto") ›
+     escolha **Whisper** › **Instalar dependências** (uns 2 GB, demora) › baixe um modelo. Quando ficar tudo verde,
+     está pronto.
+  3. Para legendar: veja "Legendas" no guia do Estúdio. Exporte o `.srt` para a mesma pasta do vídeo e, se quiser,
+     peça no Estúdio: "queime a legenda legendas.srt no vídeo".
 
 ### Acabamento no Kdenlive
 
@@ -272,6 +287,9 @@ Abra o arquivo da pasta `editados` no Kdenlive, edite e exporte em **Projeto ›
 | Nenhuma conta aparece em Contas | Parte 4.3 (vínculo com a Página) e "Editar acesso" na janela do Facebook |
 | "Publicar está desligado" | A janela preta precisa estar aberta; se o túnel falhou, feche e abra o `iniciar.cmd` de novo |
 | Estúdio: "O FFmpeg não está instalado" | Rode `winget install -e --id Gyan.FFmpeg`, feche e abra o `iniciar.cmd` de novo |
+| `ffmpeg` não é reconhecido logo depois de instalar | Feche o PowerShell (e o `iniciar.cmd`) e abra de novo |
+| Estúdio diz "legenda automática: use o Kdenlive" | Foi instalada a versão Essentials do FFmpeg: rode `winget uninstall Gyan.FFmpeg.Essentials`, depois `winget install -e --id Gyan.FFmpeg`, e reabra o dashboard |
+| Kdenlive: "dependências ausentes" na legenda automática | Instale o Python com **Add python.exe to PATH** marcado (Parte 8, Legendas), reinicie o Kdenlive e clique em Instalar dependências |
 | Estúdio: "Este plano não pode ser executado" | Peça de novo com mais detalhes (nomes dos arquivos, tempos); o plano só pode usar os arquivos marcados |
 | "Porta em uso" ao abrir | Já existe um dashboard aberto: feche as janelas pretas e abra de novo |
 | Erro do Facebook sobre o app ("app não disponível", "URL bloqueada") | Confira o ID e a chave no `.env` (Parte 4.4, passo 4) e se o app está em Desenvolvimento; entre com o mesmo Facebook que criou o app |
