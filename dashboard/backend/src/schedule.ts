@@ -16,14 +16,49 @@ export class PublishError extends Error {
   }
 }
 
+/** Motivo pelo qual a Meta não conseguiria baixar a mídia (ou null se dá). */
+export type MediaCheck = (files: string[]) => Promise<string | null>;
+
+/**
+ * Confere, pelo endereço público, se cada arquivo pode ser baixado, antes de pedir à Meta. Sem isso, um túnel caído
+ * só aparece minutos depois, como "Media upload has failed with error code 2207…".
+ */
+export const mediaReachable: MediaCheck = async (files) => {
+  for (const file of files) {
+    let status = 0;
+    try {
+      const res = await fetch(`${config.publicBaseUrl}/media/${encodeURIComponent(file)}`, { method: 'HEAD', signal: AbortSignal.timeout(15_000) });
+      status = res.status;
+    } catch {
+      // sem resposta: túnel desligado ou endereço antigo
+    }
+    if (status >= 200 && status < 300) continue;
+    if (status === 404) return 'O arquivo enviado não está mais no servidor. Escolha a mídia de novo e publique.';
+    return (
+      `O endereço público (${config.publicBaseUrl}) não responde: a Meta não conseguiria baixar a mídia. ` +
+      'O túnel provavelmente está desligado ou mudou de endereço. Abra pelo iniciar.cmd (ele liga o túnel e atualiza o ' +
+      'PUBLIC_BASE_URL) ou rode "cloudflared tunnel --url http://localhost:3000", copie o novo endereço para o ' +
+      'PUBLIC_BASE_URL no backend/.env e reinicie o dashboard.'
+    );
+  }
+  return null;
+};
+
 /** Publica pela conta (conexão, endereço público, validação) e registra no histórico. */
-export async function publishFor(db: DatabaseSync, accountId: string, req: PublishRequest): Promise<{ id: string; permalink?: string }> {
+export async function publishFor(
+  db: DatabaseSync,
+  accountId: string,
+  req: PublishRequest,
+  reachable: MediaCheck = mediaReachable,
+): Promise<{ id: string; permalink?: string }> {
   const c = read().connections[accountId];
   if (!c || c.tokenExpiresAt < Date.now()) throw new PublishError(409, 'Conta não conectada. Conecte na página da conta.');
   const missing = publishMissing();
   if (missing) throw new PublishError(400, `Para publicar, o Instagram precisa baixar a mídia de um endereço público. Configure no backend/.env: ${missing}.`);
   const invalid = validate(req);
   if (invalid) throw new PublishError(400, invalid);
+  const unreachable = await reachable(filesOf(req));
+  if (unreachable) throw new PublishError(503, unreachable);
   const log = db.prepare(
     `INSERT INTO publish_log(account_id, type, caption, trial, ok, error, media_id, permalink, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   );
