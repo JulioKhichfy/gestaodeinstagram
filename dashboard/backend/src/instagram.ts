@@ -26,8 +26,9 @@ export class InstagramError extends Error {
 /** "API access blocked" (código 200) vale para qualquer token: quem foi bloqueado é o app da Meta, não a conta. */
 export const APP_BLOCKED =
   'Instagram: API access blocked. A Meta bloqueou o app usado pelo dashboard (vale para todas as contas). ' +
-  'Abra developers.facebook.com › Meus apps › o app do .env e veja o aviso de restrição e o pedido de análise; ' +
-  'confira também developers.facebook.com/support. Reconectar as contas não resolve.';
+  'Costuma ser temporário (ex.: muitas tentativas seguidas): espere algumas horas e tente de novo, sem repetir o envio. ' +
+  'Se continuar, abra developers.facebook.com › Meus apps › Todos os apps › o app do .env e veja se há aviso de ' +
+  'restrição; confira também developers.facebook.com/support. Reconectar as contas não resolve.';
 
 // Códigos de limite de uso da Graph API: vale esperar e tentar de novo.
 const RATE_LIMIT_CODES = new Set([4, 17, 32, 613]);
