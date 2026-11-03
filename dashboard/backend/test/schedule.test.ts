@@ -166,3 +166,21 @@ describe('antes de publicar', () => {
     assert.match(msg, /H\.264/);
   });
 });
+
+describe('app bloqueado pela Meta', () => {
+  it('"API access blocked" vira orientação sobre o app, sem tentar de novo', async () => {
+    const { call } = await import('../src/instagram.ts');
+    const realFetch = globalThis.fetch;
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls++;
+      return new Response(JSON.stringify({ error: { message: 'API access blocked.', type: 'OAuthException', code: 200 } }), { status: 400 });
+    }) as typeof fetch;
+    try {
+      await assert.rejects(call('https://graph.facebook.com/v23.0/me'), /bloqueou o app.*developers\.facebook\.com/);
+      assert.equal(calls, 1);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+});
